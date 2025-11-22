@@ -13,7 +13,7 @@ class Settings(BaseSettings):
   # Stripe Configuration
   STRIPE_API_KEY: str | None = None
   STRIPE_WEBHOOK_SECRET: str | None = None
-  DOMAIN: str = "http://localhost:3000"
+  DOMAIN: str = "https://baibussines.com"
 
   @field_validator("SECRET_KEY")
   @classmethod
