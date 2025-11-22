@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [adminKey, setAdminKey] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -36,7 +37,8 @@ export default function RegisterPage() {
         body: JSON.stringify({
           email,
           password,
-          full_name: fullName || null
+          full_name: fullName || null,
+          admin_key: adminKey.trim() || null
         })
       });
 
@@ -152,6 +154,25 @@ export default function RegisterPage() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
                 placeholder="••••••••"
               />
+            </div>
+
+            {/* Admin Secret Key Input - TEMPORARY: Remove after creating initial admin account */}
+            <div>
+              <label htmlFor="adminKey" className="block text-sm font-medium text-gray-700 mb-2">
+                Admin Secret Key / Clave de Administrador <span className="text-xs text-gray-500">(Optional)</span>
+              </label>
+              <input
+                id="adminKey"
+                type="text"
+                value={adminKey}
+                onChange={(e) => setAdminKey(e.target.value)}
+                disabled={isLoading || success}
+                className="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                placeholder="Enter admin secret code (leave empty for regular user)"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                ⚠️ TEMPORARY: This field should be removed after creating the initial admin account.
+              </p>
             </div>
 
             {/* Submit Button */}
