@@ -1,0 +1,17 @@
+[project]
+name = "bai-backend"
+version = "0.1.0"
+description = "FastAPI backend for the B.A.I. platform"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.111.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic-settings>=2.3.4",
+  "psycopg[binary]>=3.2.1"
+]
+
+[tool.uvicorn]
+app = "app.main:app"
+host = "0.0.0.0"
+port = 8000
+reload = true

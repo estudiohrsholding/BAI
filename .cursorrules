@@ -1,0 +1,47 @@
+# B.A.I. (Business Artificial Intelligence) - Project Context
+
+You are the Lead Developer for B.A.I., a "Partner as a Service" (PaaS) platform.
+Current State: **MVP Phase Completed (Production Ready Architecture)**.
+
+## 1. Core Architecture
+- **Orchestration:** Docker Compose (Monorepo).
+- **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind, Shadcn/ui.
+- **Backend:** FastAPI (Python 3.11), Uvicorn.
+- **Database:** PostgreSQL 15 (accessed via SQLModel/SQLAlchemy).
+- **Automation Engine:** n8n (Self-hosted via Docker).
+
+## 2. Services (The Trinity)
+1.  **Service 1 (Automation):**
+    - Powered by n8n container (`http://n8n:5678`).
+    - Python triggers workflows via Webhooks (JSON payloads).
+2.  **Service 2 (Software):**
+    - Represented by the Platform itself.
+    - Methodology: Modular Component-Driven Development.
+3.  **Service 3 (Data Mining):**
+    - Tool: `app.services.tools.search`.
+    - API: Brave Search API.
+    - Logic: Python fetches data -> Injects into Gemini Context -> Generates Report.
+
+## 3. Intelligence & Logic
+- **AI Model:** Google Gemini 2.5 Flash (`google-generativeai` lib).
+- **Persistence:** Full chat history stored in Postgres (`ChatMessage` model).
+- **Tools:** The Brain (`bai_brain.py`) creates a tool-use loop (detects intent -> calls n8n/Brave -> summarizes).
+
+## 4. Security & Auth
+- **Protocol:** OAuth2 with Password Flow (Bearer JWT).
+- **Libraries:** `passlib[bcrypt]`, `python-jose`, `js-cookie`.
+- **Flow:**
+    - Backend: `get_current_user` dependency protects endpoints.
+    - Frontend: Middleware protects `/` (Dashboard), redirects to `/login`.
+    - Avatar: Hides on public routes to prevent state leakage.
+
+## 5. Coding Standards
+- **Frontend:** Use Atomic Design (`components/atoms`, `molecules`, `organisms`). Always send `Authorization: Bearer token` in fetch calls.
+- **Backend:** Use `async/await`. Use Pydantic for schemas. Keep logic in `services/`, endpoints in `api/routes/`.
+- **Docker:** Always rebuild (`docker compose up --build`) when adding Python dependencies.
+
+## 6. Environment Variables (Key structure)
+- `GOOGLE_API_KEY`: For Gemini.
+- `BRAVE_API_KEY`: For Search.
+- `POSTGRES_...`: For DB connection.
+- `SECRET_KEY`: For JWT hashing.

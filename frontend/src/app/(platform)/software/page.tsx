@@ -1,0 +1,162 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { AppWindow, Leaf, ExternalLink, Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+interface SoftwareApp {
+  id: string;
+  name: string;
+  description: string;
+  url: string;
+  icon?: React.ComponentType<{ className?: string }>; // Optional - fallback if logoUrl is not available
+  logoUrl?: string; // URL to the app's logo/favicon
+  status: string;
+  color: string;
+  bgColor: string;
+}
+
+const SOFTWARE_PORTFOLIO: SoftwareApp[] = [
+  {
+    id: "cannabiapp",
+    name: "Cannabiapp",
+    description:
+      "The ultimate management platform for associations and clubs. Control members, stock, and dispensing in one place.",
+    url: "https://cannabiapp.com",
+    logoUrl: "https://www.google.com/s2/favicons?domain=cannabiapp.com&sz=128",
+    icon: Leaf, // Fallback icon if logoUrl fails to load
+    status: "Live",
+    color: "text-green-500",
+    bgColor: "bg-green-500/10",
+  },
+  // Future apps will be added here
+];
+
+export default function SoftwarePage() {
+  const router = useRouter();
+
+  const handleChatRedirect = () => {
+    router.push("/dashboard?action=automation_consult");
+  };
+
+  return (
+    <div className="space-y-8">
+        {/* Header */}
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100">
+            <AppWindow className="h-6 w-6 text-purple-600" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Software Suite</h1>
+            <p className="text-sm text-gray-600">Developed Solutions & Monetized Products</p>
+          </div>
+        </div>
+
+        {/* Live Apps Grid */}
+        {SOFTWARE_PORTFOLIO.length > 0 && (
+          <div>
+            <h2 className="mb-4 text-xl font-semibold text-gray-900">Live Applications</h2>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {SOFTWARE_PORTFOLIO.map((app) => {
+                const Icon = app.icon;
+                // Component to handle logo with fallback
+                const LogoOrIcon = () => {
+                  const [logoError, setLogoError] = useState(false);
+
+                  if (app.logoUrl && !logoError) {
+                    return (
+                      <img
+                        src={app.logoUrl}
+                        alt={`${app.name} logo`}
+                        className="h-12 w-12 rounded-md object-contain"
+                        onError={() => setLogoError(true)}
+                      />
+                    );
+                  }
+
+                  if (Icon) {
+                    return <Icon className={cn("h-6 w-6", app.color)} />;
+                  }
+
+                  return null;
+                };
+
+                return (
+                  <a
+                    key={app.id}
+                    href={app.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "group relative overflow-hidden rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-gray-300"
+                    )}
+                  >
+                    {/* Logo or Icon */}
+                    <div className={cn("mb-4 flex h-12 w-12 items-center justify-center rounded-md", app.bgColor)}>
+                      <LogoOrIcon />
+                    </div>
+
+                    {/* Content */}
+                    <div className="space-y-3">
+                      <div className="flex items-start justify-between">
+                        <h3 className="text-lg font-semibold text-gray-900">{app.name}</h3>
+                        <ExternalLink className="h-4 w-4 text-gray-400 transition-colors group-hover:text-gray-600" />
+                      </div>
+
+                      <p className="text-sm text-gray-600">{app.description}</p>
+
+                      {/* Status Badge */}
+                      <div className="flex items-center gap-2">
+                        <span className={cn("rounded-full px-2 py-1 text-xs font-medium", app.bgColor, app.color)}>
+                          {app.status}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Hover Effect */}
+                    <div className="absolute inset-0 -z-10 bg-gradient-to-br from-purple-50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* In Development Section */}
+        <div>
+          <h2 className="mb-4 text-xl font-semibold text-gray-900">In Development</h2>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {/* Placeholder Card */}
+            <button
+              onClick={handleChatRedirect}
+              className={cn(
+                "group relative overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 p-6 text-left transition-all duration-200 hover:border-purple-400 hover:bg-gradient-to-br hover:from-purple-50 hover:to-gray-50 hover:shadow-md"
+              )}
+            >
+              {/* Icon */}
+              <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/10">
+                <Sparkles className="h-6 w-6 text-purple-500" />
+              </div>
+
+              {/* Content */}
+              <div className="space-y-3">
+                <h3 className="text-lg font-semibold text-gray-900">Your Custom App</h3>
+                <p className="text-sm text-gray-600">
+                  Do you have an idea? Let B.A.I. build it.
+                </p>
+
+                {/* Call to Action */}
+                <div className="flex items-center gap-2 text-sm font-medium text-purple-600 group-hover:text-purple-700">
+                  <span>Talk to B.A.I.</span>
+                  <Sparkles className="h-4 w-4 transition-transform group-hover:scale-110" />
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
