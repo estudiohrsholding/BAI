@@ -7,7 +7,6 @@ import Cookies from "js-cookie";
 import { Workflow, AppWindow, DatabaseZap, Lock, CheckCircle2, Code2, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getMeUrl } from "@/lib/api";
-import { Button } from "@/components/atoms/Button";
 
 interface User {
   id: number;
@@ -271,8 +270,11 @@ export default function DashboardPage() {
           </div>
           {!isEnterprise && (
             <div>
-              <Link href="/plans">
-                <Button className="whitespace-nowrap">Upgrade to Premium</Button>
+              <Link 
+                href="/plans"
+                className="inline-block whitespace-nowrap rounded-md bg-blue-600 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              >
+                Upgrade to Premium
               </Link>
             </div>
           )}
