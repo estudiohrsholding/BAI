@@ -6,9 +6,6 @@ Handles Stripe checkout session creation for subscription flows.
 import stripe
 from app.core.config import settings
 
-# Initialize Stripe API key
-stripe.api_key = settings.STRIPE_API_KEY
-
 
 def create_checkout_session(user_id: int, price_id: str) -> str:
   """
@@ -27,8 +24,13 @@ def create_checkout_session(user_id: int, price_id: str) -> str:
     ValueError: If STRIPE_API_KEY is not configured
     stripe.error.StripeError: If Stripe API call fails
   """
+  # Validate API key is configured before setting it
   if not settings.STRIPE_API_KEY:
     raise ValueError("STRIPE_API_KEY is not configured. Please set it in your .env file.")
+  
+  # Set Stripe API key only if it's not None (after validation)
+  # This prevents setting stripe.api_key to None at module import time
+  stripe.api_key = settings.STRIPE_API_KEY
   
   try:
     # Create checkout session
