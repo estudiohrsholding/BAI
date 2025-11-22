@@ -27,6 +27,7 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [hasAutoSent, setHasAutoSent] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isLoadingRef = useRef(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -108,11 +109,13 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
   }, [isOpen, router]);
 
   // Auto-send function for programmatic use (memoized with useCallback)
+  // Using ref for isLoading to avoid recreating function on every state change
   const sendMessage = useCallback(async (messageText: string) => {
-    if (!messageText.trim() || isLoading) return;
+    if (!messageText.trim() || isLoadingRef.current) return;
 
     // Add user message immediately
     setMessages((prev) => [...prev, { role: "user", text: messageText }]);
+    isLoadingRef.current = true;
     setIsLoading(true);
 
     try {
@@ -150,9 +153,10 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
         { role: "bot", text: "Sorry, I'm having trouble connecting. Please try again." }
       ]);
     } finally {
+      isLoadingRef.current = false;
       setIsLoading(false);
     }
-  }, [isLoading, router]);
+  }, [router]);
 
   const handleSend = async () => {
     if (!message.trim() || isLoading) return;

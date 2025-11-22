@@ -1,23 +1,18 @@
-import "./globals.css";
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "B.A.I. - Business Artificial Intelligence",
-  description: "Partner-as-a-Service Platform"
+  title: "B.A.I.",
+  description: "Partner as a Service",
 };
 
-interface RootLayoutProps {
-  children: React.ReactNode;
-}
-
-/**
- * Root Layout - Minimal layout with only HTML structure and global styles
- * Route groups handle their own specific layouts
- */
-export default function RootLayout({ children }: RootLayoutProps) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
-      <body>{children}</body>
+    <html lang="en">
+      <body className={inter.className}>{children}</body>
     </html>
   );
 }

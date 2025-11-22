@@ -40,17 +40,20 @@ async def upgrade_plan(
     HTTPException 500 if database update fails
   """
   try:
+    # Merge current_user into this session to avoid session binding issues
+    # This ensures the user object is attached to the current session
+    user_in_session = session.merge(current_user)
+    
     # Update user's plan tier
-    current_user.plan_tier = plan_update.plan
+    user_in_session.plan_tier = plan_update.plan
     
     # Save changes to database
-    session.add(current_user)
     session.commit()
-    session.refresh(current_user)
+    session.refresh(user_in_session)
     
     return {
       "status": "success",
-      "new_tier": current_user.plan_tier
+      "new_tier": user_in_session.plan_tier
     }
     
   except Exception as e:

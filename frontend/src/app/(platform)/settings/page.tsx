@@ -76,9 +76,8 @@ export default function SettingsPage() {
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
             <p className="text-sm text-gray-600">Loading...</p>
-        </div>
+          </div>
       </div>
-    </div>
     );
   }
 

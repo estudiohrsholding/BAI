@@ -9,6 +9,7 @@ export function middleware(request: NextRequest) {
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/static") ||
+    pathname.startsWith("/api") ||
     pathname.includes(".") // Images, favicon, etc.
   ) {
     return NextResponse.next();
@@ -17,31 +18,25 @@ export function middleware(request: NextRequest) {
   // 2. Define Paths
   const isAuthPage = pathname === "/login" || pathname === "/register";
   const isPublicRoot = pathname === "/";
-  // If it's not public root and not auth page, assume it requires protection
-  const isProtectedRoute = !isPublicRoot && !isAuthPage;
 
   // 3. Redirect Logic
 
   // CASE A: User is NOT logged in
   if (!token) {
-    // If trying to access protected route -> Login
-    if (isProtectedRoute) {
-      return NextResponse.redirect(new URL("/login", request.url));
+    // If trying to access auth pages or root -> Allow
+    if (isAuthPage || isPublicRoot) {
+      return NextResponse.next();
     }
-    // Otherwise (Landing, Login, Register) -> Allow
-    return NextResponse.next();
+    // Otherwise (protected routes) -> Redirect to Login
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // CASE B: User IS logged in
-  // If trying to access Login/Register -> Go to Dashboard
+  // If trying to access Login/Register -> Redirect to Dashboard
   if (isAuthPage) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
-  // IMPORTANT: If they are at root '/', allow them to see the Landing Page?
-  // OR redirect to Dashboard?
-  // DECISION: Let's allow logged-in users to see the Landing Page at '/',
-  // but give them a button to "Go to Dashboard".
-  // So, we simply allow next() for root.
+  // Allow all other routes (including root landing page)
   return NextResponse.next();
 }
 
