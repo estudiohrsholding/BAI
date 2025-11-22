@@ -78,6 +78,13 @@ def authenticate_user(session: Session, email: str, password: str) -> User | Non
     
   if not user.is_active:
     return None
+  
+  # Ensure role is set (backward compatibility for existing users)
+  if not hasattr(user, 'role') or user.role is None or user.role == '':
+    user.role = "client"
+    session.add(user)
+    session.commit()
+    session.refresh(user)
     
   return user
 

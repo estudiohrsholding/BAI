@@ -20,6 +20,6 @@ class User(SQLModel, table=True):
   hashed_password: str = Field(max_length=255)
   full_name: Optional[str] = Field(default=None, max_length=255)
   plan_tier: str = Field(default="basic", max_length=50)
-  role: str = Field(default="client", max_length=50)
+  role: Optional[str] = Field(default="client", max_length=50)  # Optional for backward compatibility
   is_active: bool = Field(default=True)
 
