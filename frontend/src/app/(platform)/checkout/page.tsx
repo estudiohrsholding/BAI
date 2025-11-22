@@ -4,9 +4,9 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Cookies from "js-cookie";
-import { Check, CreditCard, Sparkles, Crown, ArrowLeft } from "lucide-react";
+import { Check, Sparkles, Crown, ArrowLeft, Lock, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getBillingUpgradeUrl } from "@/lib/api";
+import { getBillingCheckoutUrl } from "@/lib/api";
 
 type PlanTier = "basic" | "premium" | "enterprise";
 
@@ -61,12 +61,20 @@ const planDetails: Record<PlanTier, PlanDetails> = {
   },
 };
 
+// Stripe Price IDs mapping
+const STRIPE_PRICES: Record<PlanTier, string> = {
+  basic: "price_1SW75b3uS74QeVMZCAVvdOxd", // Replace with actual ID or use same for test
+  premium: "price_1SW76Q3uS74QeVMZtrMtW59e",
+  enterprise: "price_1SW77L3uS74QeVMZ3xsaGzuY",
+};
+
 export default function CheckoutPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const plan = (searchParams.get("plan") || "basic") as PlanTier;
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -96,13 +104,24 @@ export default function CheckoutPage() {
         return;
       }
 
-      const response = await fetch(getBillingUpgradeUrl(), {
+      // Get the correct price_id based on selected plan
+      const priceId = STRIPE_PRICES[plan];
+
+      // Validate price_id exists for this plan
+      if (!priceId) {
+        throw new Error(
+          `Price ID not configured for ${plan} plan. Please contact support.`
+        );
+      }
+
+      // Call Stripe checkout endpoint
+      const response = await fetch(getBillingCheckoutUrl(), {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ price_id: priceId }),
       });
 
       if (response.status === 401) {
@@ -112,19 +131,27 @@ export default function CheckoutPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({
-          detail: "Failed to upgrade plan",
+          detail: "Failed to create checkout session",
         }));
-        throw new Error(errorData.detail || "Failed to upgrade plan");
+        throw new Error(errorData.detail || "Failed to create checkout session");
       }
 
-      // Success
-      setIsSuccess(true);
-      setIsProcessing(false);
+      // Get checkout URL from response
+      const data = await response.json();
+      const checkoutUrl = data.url;
 
-      // Redirect to dashboard after 2 seconds
+      if (!checkoutUrl) {
+        throw new Error("No checkout URL received from server");
+      }
+
+      // Update UI state to show redirecting message
+      setIsProcessing(false);
+      setIsRedirecting(true);
+
+      // Small delay to show the redirecting message, then redirect to Stripe Checkout
       setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
+        window.location.href = checkoutUrl;
+      }, 300);
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setIsProcessing(false);
@@ -261,67 +288,38 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Right Side - Payment Method */}
+          {/* Right Side - Secure Checkout */}
           <div className="space-y-6">
             <div>
-              <h2 className="mb-2 text-3xl font-bold text-white">Payment Method</h2>
-              <p className="text-slate-400">Complete your purchase securely</p>
+              <h2 className="mb-2 text-3xl font-bold text-white">Secure Checkout</h2>
+              <p className="text-slate-400">Complete your purchase securely via Stripe</p>
             </div>
 
-            {/* Credit Card Mockup */}
+            {/* Payment Info Card */}
             <div className="rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-900 to-slate-800 p-8 shadow-xl">
-              <div className="mb-6 flex items-center justify-between">
-                <CreditCard className="h-8 w-8 text-slate-400" />
-                <span className="text-xs font-semibold text-slate-500">SECURE PAYMENT</span>
+              <div className="mb-6 flex items-center justify-center gap-3">
+                <Lock className="h-6 w-6 text-green-400" />
+                <span className="text-sm font-semibold text-slate-300">Secure Payment</span>
               </div>
 
-              {/* Card Number */}
-              <div className="mb-6 space-y-2">
-                <label className="block text-xs font-medium text-slate-400">
-                  Card Number
-                </label>
-                <div className="flex items-center gap-2 rounded-lg border border-slate-600 bg-slate-800/50 px-4 py-3">
-                  <div className="h-6 w-8 rounded bg-gradient-to-r from-blue-500 to-purple-500" />
-                  <span className="text-lg tracking-wider text-slate-300">
-                    •••• •••• •••• 4242
-                  </span>
-                </div>
-              </div>
+              <p className="mb-8 text-center text-base text-slate-300 leading-relaxed">
+                You will be redirected to Stripe to complete your secure payment.
+              </p>
 
-              {/* Expiry & CVV */}
-              <div className="mb-6 grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium text-slate-400">
-                    Expiry
-                  </label>
-                  <div className="rounded-lg border border-slate-600 bg-slate-800/50 px-4 py-3">
-                    <span className="text-slate-300">12/25</span>
-                  </div>
+              {/* Security Features */}
+              <div className="space-y-3 rounded-lg bg-slate-800/30 p-4">
+                <div className="flex items-center gap-3 text-sm text-slate-400">
+                  <div className="h-2 w-2 rounded-full bg-green-400" />
+                  <span>SSL encrypted connection</span>
                 </div>
-                <div className="space-y-2">
-                  <label className="block text-xs font-medium text-slate-400">CVV</label>
-                  <div className="rounded-lg border border-slate-600 bg-slate-800/50 px-4 py-3">
-                    <span className="text-slate-300">•••</span>
-                  </div>
+                <div className="flex items-center gap-3 text-sm text-slate-400">
+                  <div className="h-2 w-2 rounded-full bg-green-400" />
+                  <span>PCI DSS compliant processing</span>
                 </div>
-              </div>
-
-              {/* Cardholder Name */}
-              <div className="mb-6 space-y-2">
-                <label className="block text-xs font-medium text-slate-400">
-                  Cardholder Name
-                </label>
-                <div className="rounded-lg border border-slate-600 bg-slate-800/50 px-4 py-3">
-                  <span className="text-slate-300">JOHN DOE</span>
+                <div className="flex items-center gap-3 text-sm text-slate-400">
+                  <div className="h-2 w-2 rounded-full bg-green-400" />
+                  <span>Your card details are never stored on our servers</span>
                 </div>
-              </div>
-
-              {/* Security Badge */}
-              <div className="flex items-center justify-center gap-2 rounded-lg bg-slate-800/30 py-3">
-                <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
-                <span className="text-xs font-medium text-slate-400">
-                  Payment secured with SSL encryption
-                </span>
               </div>
             </div>
 
@@ -353,7 +351,7 @@ export default function CheckoutPage() {
 
               <button
                 onClick={handlePayment}
-                disabled={isProcessing}
+                disabled={isProcessing || isRedirecting}
                 className={cn(
                   "relative w-full overflow-hidden rounded-xl px-8 py-4 font-bold text-white shadow-2xl transition-all duration-300",
                   "hover:shadow-lg hover:scale-[1.02]",
@@ -365,21 +363,34 @@ export default function CheckoutPage() {
                     : "bg-gradient-to-r from-emerald-500 to-green-500"
                 )}
               >
-                {isProcessing ? (
+                {isRedirecting ? (
                   <span className="flex items-center justify-center gap-2">
                     <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Processing...
+                    Redirecting to Stripe...
+                  </span>
+                ) : isProcessing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Creating checkout session...
                   </span>
                 ) : (
                   <span className="flex items-center justify-center gap-2">
-                    <Crown className="h-5 w-5" />
-                    Confirm & Pay
+                    Proceed to Checkout
+                    <ArrowRight className="h-5 w-5" />
                   </span>
                 )}
               </button>
 
+              {/* Security Badge */}
+              <div className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-slate-800/30 py-3">
+                <Lock className="h-4 w-4 text-green-400" />
+                <span className="text-xs font-medium text-slate-400">
+                  Secured by Stripe
+                </span>
+              </div>
+
               <p className="mt-4 text-center text-xs text-slate-500">
-                By confirming, you agree to our Terms of Service and Privacy Policy
+                By proceeding, you agree to our Terms of Service and Privacy Policy
               </p>
             </div>
           </div>

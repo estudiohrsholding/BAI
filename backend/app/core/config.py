@@ -9,6 +9,11 @@ class Settings(BaseSettings):
   DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@db:5432/bai"
   # SECRET_KEY must be set via environment variable - no insecure default
   SECRET_KEY: str
+  
+  # Stripe Configuration
+  STRIPE_API_KEY: str | None = None
+  STRIPE_WEBHOOK_SECRET: str | None = None
+  DOMAIN: str = "http://localhost:3000"
 
   @field_validator("SECRET_KEY")
   @classmethod

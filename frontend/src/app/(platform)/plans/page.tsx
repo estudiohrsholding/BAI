@@ -299,21 +299,20 @@ export default function PlansPage() {
             </p>
           </div>
         </div>
-      </div>
 
-      {/* Contact Modal */}
-      {isContactOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
-          onClick={() => setIsContactOpen(false)}
-        >
+        {/* Contact Modal */}
+        {isContactOpen && (
           <div
-            className={cn(
-              "relative w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-8 shadow-2xl",
-              "animate-in fade-in zoom-in-95 duration-200"
-            )}
-            onClick={(e) => e.stopPropagation()}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setIsContactOpen(false)}
           >
+            <div
+              className={cn(
+                "relative w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-8 shadow-2xl",
+                "animate-in fade-in zoom-in-95 duration-200"
+              )}
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Close Button */}
             <button
               onClick={() => setIsContactOpen(false)}
@@ -445,9 +444,9 @@ export default function PlansPage() {
                 </button>
               </div>
             </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 }

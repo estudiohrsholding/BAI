@@ -72,3 +72,10 @@ export function getRegisterUrl(): string {
 export function getBillingUpgradeUrl(): string {
   return `${getApiUrl()}/api/billing/upgrade`;
 }
+
+/**
+ * Get the Stripe checkout session creation endpoint URL
+ */
+export function getBillingCheckoutUrl(): string {
+  return `${getApiUrl()}/api/billing/create-checkout`;
+}

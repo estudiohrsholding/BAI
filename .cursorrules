@@ -1,47 +1,67 @@
-# B.A.I. (Business Artificial Intelligence) - Project Context
+# B.A.I. (Business Artificial Intelligence) - MASTER CONTEXT
 
-You are the Lead Developer for B.A.I., a "Partner as a Service" (PaaS) platform.
-Current State: **MVP Phase Completed (Production Ready Architecture)**.
+**Role:** You are the Lead Full Stack Architect for B.A.I., a "Partner as a Service" (PaaS) platform.
+**Philosophy:** "Radical Simplicity". We hide complex tech (n8n, scraping) behind a friendly AI interface.
 
-## 1. Core Architecture
-- **Orchestration:** Docker Compose (Monorepo).
-- **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind, Shadcn/ui.
-- **Backend:** FastAPI (Python 3.11), Uvicorn.
-- **Database:** PostgreSQL 15 (accessed via SQLModel/SQLAlchemy).
-- **Automation Engine:** n8n (Self-hosted via Docker).
+---
 
-## 2. Services (The Trinity)
-1.  **Service 1 (Automation):**
-    - Powered by n8n container (`http://n8n:5678`).
-    - Python triggers workflows via Webhooks (JSON payloads).
-2.  **Service 2 (Software):**
-    - Represented by the Platform itself.
-    - Methodology: Modular Component-Driven Development.
-3.  **Service 3 (Data Mining):**
-    - Tool: `app.services.tools.search`.
-    - API: Brave Search API.
-    - Logic: Python fetches data -> Injects into Gemini Context -> Generates Report.
+## 1. ARCHITECTURE & INFRASTRUCTURE
+- **Type:** Dockerized Monorepo orchestrated via `docker-compose.yml`.
+- **Network:** Services communicate via the `bai` bridge network.
+- **Services:**
+  - **Frontend:** Next.js 14 (App Router) on Port `3000`.
+  - **Backend:** FastAPI (Python 3.11) on Port `8000`.
+  - **Database:** PostgreSQL 15 (Service: `db`, Port: `5432`).
+  - **Automation:** n8n (Service: `n8n`, Port: `5678`). **Internal access only via Backend.**
 
-## 3. Intelligence & Logic
-- **AI Model:** Google Gemini 2.5 Flash (`google-generativeai` lib).
-- **Persistence:** Full chat history stored in Postgres (`ChatMessage` model).
-- **Tools:** The Brain (`bai_brain.py`) creates a tool-use loop (detects intent -> calls n8n/Brave -> summarizes).
+## 2. TECH STACK & STANDARDS
 
-## 4. Security & Auth
-- **Protocol:** OAuth2 with Password Flow (Bearer JWT).
-- **Libraries:** `passlib[bcrypt]`, `python-jose`, `js-cookie`.
-- **Flow:**
-    - Backend: `get_current_user` dependency protects endpoints.
-    - Frontend: Middleware protects `/` (Dashboard), redirects to `/login`.
-    - Avatar: Hides on public routes to prevent state leakage.
+### Frontend (The Body)
+- **Framework:** Next.js 14.2+ (App Router).
+- **Styling:** Tailwind CSS + Shadcn/ui.
+- **Folder Structure (CRITICAL):**
+  - `src/app/(marketing)`: Public Landing Page (`/`).
+  - `src/app/(platform)`: Protected Dashboard (`/dashboard`, `/automation`, etc.).
+  - `src/middleware.ts`: "Allow List" strategy. Protects specific paths.
+- **Auth:** `js-cookie` stores the JWT. `Authorization: Bearer <token>` header required for API calls.
+- **Key Components:**
+  - `DashboardShell`: Wrapper for protected pages (Sidebar + Avatar).
+  - `BaiAvatar`: Persists in `(platform)/layout.tsx`. Hides on auth pages.
 
-## 5. Coding Standards
-- **Frontend:** Use Atomic Design (`components/atoms`, `molecules`, `organisms`). Always send `Authorization: Bearer token` in fetch calls.
-- **Backend:** Use `async/await`. Use Pydantic for schemas. Keep logic in `services/`, endpoints in `api/routes/`.
-- **Docker:** Always rebuild (`docker compose up --build`) when adding Python dependencies.
+### Backend (The Brain)
+- **Framework:** FastAPI.
+- **ORM:** SQLModel (SQLAlchemy + Pydantic).
+- **AI Engine:** Google Gemini 2.5 Flash (via `google-generativeai >= 0.8.5`).
+- **Security:** OAuth2 with Password Flow.
+  - **Hashing:** `bcrypt==4.0.1` (Pinned to avoid `passlib` conflicts).
+  - **Token:** JWT (HS256).
+- **Tools:**
+  - `httpx`: For calling n8n webhooks.
+  - `Brave Search API`: For Data Mining.
 
-## 6. Environment Variables (Key structure)
-- `GOOGLE_API_KEY`: For Gemini.
-- `BRAVE_API_KEY`: For Search.
-- `POSTGRES_...`: For DB connection.
-- `SECRET_KEY`: For JWT hashing.
+## 3. THE TRINITY (Service Logic)
+
+### Service 1: Automation (n8n)
+- **Logic:** Python detects intent -> Calls `http://n8n:5678/webhook/test` -> n8n executes -> Returns JSON.
+- **UI Rule (Opaque Wall):** The "Open Workflow Editor" button in `/automation` is visible **ONLY** to Admins (`admin@bai.com`). Clients see a "Request Service" button.
+
+### Service 2: Software Studio
+- **Logic:** A static gallery of developed apps (e.g., Cannabiapp).
+- **UI:** Uses `Google Favicon Service` to fetch real logos dynamically.
+
+### Service 3: Data Mining (Brave)
+- **Logic:** `bai_brain.py` detects search intent -> Calls Brave API -> Injects results into Gemini context.
+- **Logs:** Every search is saved to `SearchLog` table and displayed in `/data`.
+
+## 4. DEVELOPMENT RULES
+1.  **Docker Rebuilds:** If modifying `backend/requirements.txt` or `.env`, ALWAYS run:
+    `docker compose down && docker compose up --build`
+2.  **Syntax:** Be careful with bracket balancing in Next.js pages (`useEffect`, `const` arrays).
+3.  **Environment:**
+    - Frontend talks to Backend via `NEXT_PUBLIC_API_URL` (Client-side) or `http://backend:8000` (Server-side).
+    - Backend talks to n8n via `http://n8n:5678`.
+
+## 5. CURRENT STATE (Nov 2025)
+- MVP is **Production Ready**.
+- Auth System is live (Login/Register/Logout).
+- Database schema includes `User`, `ChatMessage` (with user_id), and `SearchLog`.
