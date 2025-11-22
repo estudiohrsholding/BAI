@@ -122,13 +122,13 @@ export default function PlansPage() {
 
   return (
     <DashboardShell isFullWidth={true}>
-      <div className="relative min-h-screen bg-slate-950">
+      <div className="relative min-h-[calc(100vh)] bg-slate-950 text-white overflow-x-hidden">
         {/* Dark Background with Spotlight Effect */}
-        <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 -z-10 pointer-events-none">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(139,92,246,0.1),transparent_50%)]" />
         </div>
 
-        <div className="space-y-12 px-4 py-12 lg:px-8">
+        <div className="space-y-12 py-20 px-8 md:px-12">
           {/* Header */}
           <div className="text-center">
             <h1

@@ -39,8 +39,11 @@ export function DashboardShell({ children, isFullWidth = false }: DashboardShell
       {/* Main content area */}
       <main
         className={cn(
-          "w-full flex-1 overflow-y-auto md:ml-64",
-          isFullWidth ? "p-0 bg-slate-950" : "p-8 bg-gray-50",
+          "w-full flex-1 md:ml-64",
+          // Full width pages: no padding, prevent horizontal scroll, relative positioning
+          isFullWidth
+            ? "p-0 bg-slate-950 overflow-x-hidden overflow-y-auto relative"
+            : "p-8 bg-gray-50 overflow-y-auto",
           // Add top padding on mobile to account for fixed header
           "pt-20 md:pt-0"
         )}
