@@ -20,13 +20,26 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
+      // Validate API URL is configured before attempting request
+      let authUrl: string;
+      try {
+        authUrl = getAuthTokenUrl();
+      } catch (configError) {
+        // Configuration error - API URL not set
+        setError(
+          "Configuration error: API URL is not configured. Please contact support."
+        );
+        setIsLoading(false);
+        return;
+      }
+
       // Backend expects application/x-www-form-urlencoded, NOT JSON
       const formData = new URLSearchParams({
         username: email, // OAuth2 standard uses 'username' field (we use email)
         password: password
       });
 
-      const response = await fetch(getAuthTokenUrl(), {
+      const response = await fetch(authUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded"
@@ -52,7 +65,12 @@ export default function LoginPage() {
       router.push("/dashboard");
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An error occurred. Please try again.");
+      // Handle network errors, fetch failures, or API errors
+      if (err instanceof TypeError && err.message.includes("fetch")) {
+        setError("Network error: Unable to connect to server. Please check your connection.");
+      } else {
+        setError(err instanceof Error ? err.message : "An error occurred. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }

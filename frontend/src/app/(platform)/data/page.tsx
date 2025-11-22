@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { DatabaseZap } from "lucide-react";
 import { getApiUrl } from "@/lib/api";
@@ -14,6 +15,7 @@ interface SearchLog {
 }
 
 export default function DataPage() {
+  const router = useRouter();
   const [logs, setLogs] = useState<SearchLog[]>([]);
 
   useEffect(() => {
@@ -22,6 +24,7 @@ export default function DataPage() {
         const token = Cookies.get("bai_token");
         
         if (!token) {
+          router.push("/login");
           return;
         }
 
@@ -44,7 +47,7 @@ export default function DataPage() {
     };
 
     fetchLogs();
-  }, []);
+  }, [router]);
 
   return (
     <div className="space-y-6">

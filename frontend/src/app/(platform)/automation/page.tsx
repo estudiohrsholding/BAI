@@ -132,7 +132,7 @@ export default function AutomationPage() {
                   Create and manage your automation workflows with n8n
                 </p>
               </div>
-              <Link href="http://localhost:5678" target="_blank" rel="noopener noreferrer">
+              <Link href="https://n8n.baibussines.com" target="_blank" rel="noopener noreferrer">
                 <Button variant="primary" size="lg" className="flex items-center gap-2">
                   <span>Open Workflow Editor</span>
                   <ExternalLink className="h-4 w-4" />

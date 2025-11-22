@@ -5,16 +5,24 @@
 
 /**
  * Get the backend API base URL from environment variable
- * Falls back to localhost:8000 for local development
+ * CRITICAL: No hardcoded fallbacks - relies entirely on process.env.NEXT_PUBLIC_API_URL
+ * In development, docker-compose.yml sets NEXT_PUBLIC_API_URL=http://localhost:8000
+ * In production, set NEXT_PUBLIC_API_URL=https://api.baibussines.com via environment variables
+ * @throws Error if NEXT_PUBLIC_API_URL is not configured
  */
 export function getApiUrl(): string {
-  if (typeof window === "undefined") {
-    // Server-side rendering - return default
-    return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+  
+  if (!apiUrl || apiUrl.trim() === "") {
+    throw new Error(
+      "NEXT_PUBLIC_API_URL is not configured. " +
+      "Please set NEXT_PUBLIC_API_URL environment variable. " +
+      "For development: http://localhost:8000 (set in docker-compose.yml). " +
+      "For production: https://api.baibussines.com (set via deployment environment)."
+    );
   }
   
-  // Client-side - check browser environment
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+  return apiUrl.trim();
 }
 
 /**

@@ -6,7 +6,7 @@ services:
     container_name: bai-frontend
     environment:
       - NEXT_TELEMETRY_DISABLED=1
-      # Aseguramos que el frontend sepa dónde está la API (útil para Auth)
+      # Development API URL - Use production URL via environment variable override in production
       - NEXT_PUBLIC_API_URL=http://localhost:8000
     volumes:
       - ./frontend:/app
