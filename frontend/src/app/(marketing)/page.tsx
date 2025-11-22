@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Bot, Code, DatabaseZap, ArrowRight, CheckCircle, Menu } from "lucide-react";
+import { Bot, Code, DatabaseZap, ArrowRight, CheckCircle, Menu, X } from "lucide-react";
 
 export default function MarketingPage() {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50">
       {/* Fixed Navbar with Glassmorphism */}
@@ -32,10 +35,36 @@ export default function MarketingPage() {
             </div>
 
             {/* Mobile Menu Button */}
-            <button className="md:hidden p-2 text-slate-300 hover:text-white">
-              <Menu className="h-6 w-6" />
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-slate-300 hover:text-white transition-colors"
+              aria-label="Toggle mobile menu"
+            >
+              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
+
+          {/* Mobile Menu Dropdown */}
+          {isMobileMenuOpen && (
+            <div className="md:hidden border-t border-slate-800 py-4">
+              <div className="flex flex-col gap-4 px-4">
+                <Link
+                  href="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-slate-300 hover:text-white transition-colors font-medium py-2"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:from-blue-500 hover:to-purple-500 transition-all shadow-lg shadow-blue-500/25 text-center"
+                >
+                  Comenzar
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
 

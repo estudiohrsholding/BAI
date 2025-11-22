@@ -6,6 +6,8 @@ services:
     container_name: bai-frontend
     environment:
       - NEXT_TELEMETRY_DISABLED=1
+      # Aseguramos que el frontend sepa dónde está la API (útil para Auth)
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -22,8 +24,10 @@ services:
       dockerfile: Dockerfile.dev
     container_name: bai-backend
     env_file:
+      # Esto carga la SECRET_KEY, GOOGLE_API_KEY y BRAVE_API_KEY desde tu archivo
       - ./backend/.env
     environment:
+      # Forzamos la conexión a la DB aquí por si falla en el .env
       - DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/bai
     volumes:
       - ./backend:/app
@@ -56,6 +60,7 @@ services:
     environment:
       - N8N_SECURE_COOKIE=false
       - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Europe/Madrid # Opcional: Para que los logs salgan con tu hora
     volumes:
       - n8n_data:/home/node/.n8n
     ports:
@@ -70,3 +75,4 @@ volumes:
 networks:
   bai:
     driver: bridge
+    
