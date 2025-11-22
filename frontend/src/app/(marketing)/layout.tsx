@@ -9,10 +9,6 @@ interface MarketingLayoutProps {
  * Simple layout for marketing/public pages
  */
 export default function MarketingLayout({ children }: MarketingLayoutProps) {
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {children}
-    </div>
-  );
+  return <>{children}</>;
 }
 
