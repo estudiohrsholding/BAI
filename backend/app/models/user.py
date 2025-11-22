@@ -12,6 +12,7 @@ class User(SQLModel, table=True):
     hashed_password: Bcrypt hashed password
     full_name: Optional full name
     plan_tier: Subscription tier (basic, premium, enterprise)
+    role: User role for RBAC (admin, client)
     is_active: Account status flag
   """
   id: Optional[int] = Field(default=None, primary_key=True)
@@ -19,5 +20,6 @@ class User(SQLModel, table=True):
   hashed_password: str = Field(max_length=255)
   full_name: Optional[str] = Field(default=None, max_length=255)
   plan_tier: str = Field(default="basic", max_length=50)
+  role: str = Field(default="client", max_length=50)
   is_active: bool = Field(default=True)
 

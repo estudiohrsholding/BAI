@@ -6,6 +6,7 @@ from pydantic import BaseModel, EmailStr
 from sqlmodel import Session, select
 
 from app.api.deps import get_current_user
+from app.core.config import settings
 from app.core.database import get_session
 from app.core.security import (
   verify_password,
@@ -20,9 +21,20 @@ router = APIRouter()
 
 # Pydantic models for requests/responses
 class UserRegister(BaseModel):
+  """
+  User registration schema.
+  
+  Note: The 'role' field is NOT part of the input schema.
+  Role assignment is handled internally based on admin_key validation.
+  
+  SECURITY WARNING: After creating your initial admin account, it is strongly
+  recommended to remove the 'admin_key' field from this schema and the
+  ADMIN_SECRET_CODE environment variable to permanently secure the registration endpoint.
+  """
   email: EmailStr
   password: str
   full_name: str | None = None
+  admin_key: str | None = None  # Optional: used to create admin account (see SECURITY WARNING above)
 
 
 class UserResponse(BaseModel):
@@ -30,6 +42,7 @@ class UserResponse(BaseModel):
   email: str
   full_name: str | None
   plan_tier: str
+  role: str
   is_active: bool
   
   class Config:
@@ -75,17 +88,21 @@ async def register(
   session: Session = Depends(get_session)
 ) -> UserResponse:
   """
-  Register a new user.
+  Register a new user with RBAC support.
+  
+  All public registrations default to 'client' role.
+  Only users with valid admin_key (matching ADMIN_SECRET_CODE env var) can create 'admin' accounts.
   
   Args:
-    user_data: User registration data (email, password, full_name)
+    user_data: User registration data (email, password, full_name, admin_key)
     session: Database session
     
   Returns:
-    Created user object (without password)
+    Created user object (without password, includes role)
     
   Raises:
     HTTPException 400 if email already exists
+    HTTPException 403 if admin_key is invalid or ADMIN_SECRET_CODE is not configured
   """
   # Check if email already exists
   statement = select(User).where(User.email == user_data.email)
@@ -97,15 +114,41 @@ async def register(
       detail="Email already registered"
     )
   
+  # Role assignment logic:
+  # Default: All public registrations are assigned 'client' role
+  # Admin bypass: If admin_key matches ADMIN_SECRET_CODE env var, assign 'admin' role
+  user_role = "client"  # Default role for all public registrations
+  
+  if user_data.admin_key:
+    # Verify admin key against environment variable
+    if not settings.ADMIN_SECRET_CODE:
+      raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Admin registration is not configured. Please contact support."
+      )
+    
+    if user_data.admin_key != settings.ADMIN_SECRET_CODE:
+      raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Invalid admin key"
+      )
+    
+    # Valid admin key - assign admin role
+    user_role = "admin"
+  
+  # Note: The 'role' field is NOT part of the UserRegister input schema.
+  # It is assigned internally based on the admin_key validation above.
+  
   # Hash password
   hashed_password = get_password_hash(user_data.password)
   
-  # Create new user
+  # Create new user with assigned role
   new_user = User(
     email=user_data.email,
     hashed_password=hashed_password,
     full_name=user_data.full_name,
     plan_tier="basic",
+    role=user_role,
     is_active=True
   )
   

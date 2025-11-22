@@ -14,6 +14,11 @@ class Settings(BaseSettings):
   STRIPE_API_KEY: str | None = None
   STRIPE_WEBHOOK_SECRET: str | None = None
   DOMAIN: str = "https://baibussines.com"
+  
+  # RBAC Configuration
+  # SECURITY WARNING: After creating your initial admin account, remove this
+  # environment variable from your .env file to permanently secure the registration endpoint.
+  ADMIN_SECRET_CODE: str | None = None
 
   @field_validator("SECRET_KEY")
   @classmethod
