@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
 import { DatabaseZap } from "lucide-react";
-import { getApiUrl } from "@/lib/api";
+import { getDataLogsUrl } from "@/lib/api";
 
 interface SearchLog {
   id: number;
@@ -28,7 +28,7 @@ export default function DataPage() {
           return;
         }
 
-        const response = await fetch(`${getApiUrl()}/api/data/logs`, {
+        const response = await fetch(getDataLogsUrl(), {
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${token}`

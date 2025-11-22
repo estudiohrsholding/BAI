@@ -6,8 +6,9 @@
 /**
  * Get the backend API base URL from environment variable
  * CRITICAL: No hardcoded fallbacks - relies entirely on process.env.NEXT_PUBLIC_API_URL
- * In development, docker-compose.yml sets NEXT_PUBLIC_API_URL=http://localhost:8000
- * In production, set NEXT_PUBLIC_API_URL=https://api.baibussines.com via environment variables
+ * The environment variable must be set at build time for Next.js to include it in the client bundle.
+ * In development, set NEXT_PUBLIC_API_URL in docker-compose.yml or .env.local
+ * In production, set NEXT_PUBLIC_API_URL via deployment environment variables
  * @throws Error if NEXT_PUBLIC_API_URL is not configured
  */
 export function getApiUrl(): string {
@@ -17,8 +18,7 @@ export function getApiUrl(): string {
     throw new Error(
       "NEXT_PUBLIC_API_URL is not configured. " +
       "Please set NEXT_PUBLIC_API_URL environment variable. " +
-      "For development: http://localhost:8000 (set in docker-compose.yml). " +
-      "For production: https://api.baibussines.com (set via deployment environment)."
+      "This variable must be set at build time for the application to function correctly."
     );
   }
   
