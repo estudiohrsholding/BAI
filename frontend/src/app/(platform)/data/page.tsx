@@ -35,6 +35,11 @@ export default function DataPage() {
           }
         });
 
+        if (response.status === 401) {
+          router.push("/login");
+          return;
+        }
+
         if (!response.ok) {
           throw new Error("Failed to load logs");
         }

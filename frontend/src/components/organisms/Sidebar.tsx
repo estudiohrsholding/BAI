@@ -37,8 +37,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     router.push("/login");
   };
 
-  const handleLinkClick = () => {
+  const handleLinkClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     // Close sidebar on mobile when a link is clicked
+    // Don't prevent default - let Next.js Link handle navigation
     onClose();
   };
 
