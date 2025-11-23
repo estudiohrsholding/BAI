@@ -112,7 +112,7 @@ export default function SoftwarePage() {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(139,92,246,0.1),transparent_50%)]" />
       </div>
 
-      <div className="relative w-full max-w-7xl mx-auto px-6 md:px-10 py-12 md:py-20 space-y-16">
+      <div className="relative w-full max-w-[1600px] mx-auto px-6 md:px-10 py-12 md:py-20 space-y-16">
         {/* HEADER */}
         <div className="text-center space-y-4">
           <div className="flex items-center justify-center gap-3 mb-2">
