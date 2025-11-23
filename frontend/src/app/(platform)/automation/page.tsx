@@ -104,7 +104,7 @@ export default function AutomationPage() {
   };
 
   return (
-    <div className="w-full max-w-[1600px] mx-auto space-y-8">
+    <div className="w-full space-y-8">
         {/* Hero Header */}
         <div>
           <h1 className="text-4xl font-bold text-gray-900">
