@@ -162,31 +162,31 @@ export default function PlansPage() {
 
   return (
     <div className="relative min-h-screen bg-slate-950 text-white overflow-x-hidden">
-      {/* Dark Background with Spotlight Effect */}
+        {/* Dark Background with Spotlight Effect */}
       <div className="absolute inset-0 -z-10 pointer-events-none">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(139,92,246,0.1),transparent_50%)]" />
-      </div>
-
-      <div className="space-y-12 py-20 px-8 md:px-12">
-        {/* Header */}
-        <div className="text-center">
-          <h1
-            className={cn(
-              "text-5xl font-extrabold md:text-6xl",
-              "bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600",
-              "bg-clip-text text-transparent",
-              "drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]"
-            )}
-          >
-            Elige tu Nivel de Impacto
-          </h1>
-          <p className="mt-4 text-lg text-slate-400">
-            Desde automatizar respuestas hasta generar contenido viral. B.A.I. escala contigo.
-          </p>
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(139,92,246,0.1),transparent_50%)]" />
         </div>
 
-        {/* Plans Grid */}
-        <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+      <div className="space-y-12 py-20 px-8 md:px-12">
+          {/* Header */}
+          <div className="text-center">
+            <h1
+              className={cn(
+                "text-5xl font-extrabold md:text-6xl",
+                "bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600",
+                "bg-clip-text text-transparent",
+                "drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]"
+              )}
+            >
+            Elige tu Nivel de Impacto
+            </h1>
+            <p className="mt-4 text-lg text-slate-400">
+            Desde automatizar respuestas hasta generar contenido viral. B.A.I. escala contigo.
+            </p>
+          </div>
+
+          {/* Plans Grid */}
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
           {PLANS.map((plan) => {
             const isPremium = plan.isPopular;
             const isEnterprise = plan.theme === "amber";
@@ -207,8 +207,8 @@ export default function PlansPage() {
               >
                 {/* Premium Gradient Border Effect */}
                 {isPremium && (
-                  <div
-                    className={cn(
+            <div
+              className={cn(
                       "absolute -inset-[2px] rounded-2xl",
                       "bg-gradient-to-r from-violet-500 to-fuchsia-500",
                       "opacity-20 blur-sm group-hover:opacity-30",
@@ -225,11 +225,11 @@ export default function PlansPage() {
                       themeClasses.bg
                     )}
                   >
-                    <Sparkles className="h-3 w-3 text-violet-300" />
-                    <span className="text-xs font-semibold uppercase tracking-wide text-violet-300">
+                  <Sparkles className="h-3 w-3 text-violet-300" />
+                  <span className="text-xs font-semibold uppercase tracking-wide text-violet-300">
                       RECOMENDADO
-                    </span>
-                  </div>
+                  </span>
+                </div>
                 )}
 
                 {/* Tagline */}
@@ -294,24 +294,24 @@ export default function PlansPage() {
                           )}
                         />
                         <span className="text-sm text-slate-300">{feature}</span>
-                      </li>
+                  </li>
                     );
                   })}
                 </ul>
 
                 {/* CTA Button */}
                 {isEnterprise ? (
-                  <button
-                    onClick={() => setIsContactOpen(true)}
-                    className={cn(
-                      "flex w-full items-center justify-center gap-2 rounded-lg",
+              <button
+                onClick={() => setIsContactOpen(true)}
+                className={cn(
+                  "flex w-full items-center justify-center gap-2 rounded-lg",
                       "px-6 py-3 font-semibold transition-all duration-200",
                       themeClasses.button
-                    )}
-                  >
-                    <Mail className="h-4 w-4" />
+                )}
+              >
+                <Mail className="h-4 w-4" />
                     {plan.buttonText}
-                  </button>
+              </button>
                 ) : (
                   <Link
                     href={plan.buttonHref || "#"}
@@ -324,24 +324,24 @@ export default function PlansPage() {
                     {plan.buttonText}
                   </Link>
                 )}
-              </div>
+            </div>
             );
           })}
-        </div>
+          </div>
 
-        {/* Additional Info */}
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="text-sm text-slate-500">
-            Todos los planes incluyen acceso al Panel de Control y soporte técnico básico.
-            <br />
-            ¿Necesitas algo más personalizado?{" "}
-            <button
-              onClick={() => setIsContactOpen(true)}
-              className="font-semibold text-amber-400 hover:text-amber-300 underline"
-            >
-              Contacta con nuestro equipo
-            </button>
-          </p>
+          {/* Additional Info */}
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-sm text-slate-500">
+              Todos los planes incluyen acceso al Panel de Control y soporte técnico básico.
+              <br />
+              ¿Necesitas algo más personalizado?{" "}
+              <button
+                onClick={() => setIsContactOpen(true)}
+                className="font-semibold text-amber-400 hover:text-amber-300 underline"
+              >
+                Contacta con nuestro equipo
+              </button>
+            </p>
         </div>
       </div>
 

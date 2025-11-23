@@ -8,6 +8,8 @@ services:
       - NEXT_TELEMETRY_DISABLED=1
       # Development API URL - Use production URL via environment variable override in production
       - NEXT_PUBLIC_API_URL=http://localhost:8000
+      # Development n8n URL - Use production URL via environment variable override in production
+      - NEXT_PUBLIC_N8N_URL=http://localhost:5678
     volumes:
       - ./frontend:/app
       - /app/node_modules

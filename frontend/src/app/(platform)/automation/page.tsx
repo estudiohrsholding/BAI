@@ -57,7 +57,7 @@ export default function AutomationPage() {
     const fetchUser = async () => {
       try {
         const token = Cookies.get("bai_token");
-
+        
         if (!token) {
           router.push("/login");
           return;
@@ -83,11 +83,9 @@ export default function AutomationPage() {
 
         const userData = await response.json();
         setUser(userData);
-
-        // Check if user is admin (email check or role check)
-        setIsAdmin(
-          userData.email === "admin@bai.com" || userData.role === "admin"
-        );
+        
+        // Check if user is admin (RBAC: use role field)
+        setIsAdmin(userData.role === "admin");
       } catch (error) {
         console.error("Error loading user data:", error);
       } finally {
@@ -117,7 +115,7 @@ export default function AutomationPage() {
           {/* Stats Row */}
           <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
             <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-100">
                 <Clock className="h-6 w-6 text-blue-600" />
               </div>
               <div>
@@ -131,8 +129,8 @@ export default function AutomationPage() {
             <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-100">
                 <Users className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
+          </div>
+          <div>
                 <p className="text-2xl font-bold text-gray-900">142</p>
                 <p className="text-sm text-gray-600">Clientes atendidos</p>
               </div>
@@ -141,7 +139,7 @@ export default function AutomationPage() {
         </div>
 
         {/* Active Agents Grid */}
-        <div>
+          <div>
           <h2 className="mb-6 text-2xl font-semibold text-gray-900">
             Agentes Activos
           </h2>
@@ -153,9 +151,9 @@ export default function AutomationPage() {
                   Recepcionista Web
                 </h3>
                 <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-                  Active
-                </span>
-              </div>
+                    Active
+                  </span>
+                </div>
 
               {/* Visual Component */}
               <div className="mb-4 flex justify-center">
@@ -174,9 +172,9 @@ export default function AutomationPage() {
                   Gestión de Reputación
                 </h3>
                 <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
-                  Active
-                </span>
-              </div>
+                    Active
+                  </span>
+                </div>
 
               {/* Visual Component */}
               <div className="mb-4 flex justify-center">
@@ -196,8 +194,8 @@ export default function AutomationPage() {
                 </h3>
                 <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700">
                   Active
-                </span>
-              </div>
+                  </span>
+                </div>
 
               {/* Visual Component */}
               <div className="mb-4 flex justify-center">
@@ -209,10 +207,10 @@ export default function AutomationPage() {
               </p>
             </div>
           </div>
-        </div>
+            </div>
 
         {/* Tools Integration */}
-        <div>
+                <div>
           <h2 className="mb-4 text-2xl font-semibold text-gray-900">
             Herramientas Conectadas (Plan Basic)
           </h2>
@@ -269,42 +267,42 @@ export default function AutomationPage() {
                     className="block"
                   >
                     {content}
-                  </Link>
+                </Link>
                 );
               }
 
               return <div key={tool.name}>{content}</div>;
             })}
-          </div>
-        </div>
+              </div>
+            </div>
 
         {/* Request Section */}
-        <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-sm">
+            <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-sm">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex-1">
+                <div className="flex-1">
               <h3 className="mb-2 text-xl font-semibold text-gray-900">
                 ¿Necesitas automatizar algo más?
               </h3>
               <p className="text-sm text-gray-600">
                 Habla con B.A.I. para crear nuevas automatizaciones personalizadas.
-              </p>
+                  </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button
-                variant="primary"
-                size="lg"
-                onClick={handleAskBAI}
-                className="flex items-center gap-2"
-              >
-                <MessageCircle className="h-4 w-4" />
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={handleAskBAI}
+                    className="flex items-center gap-2"
+                  >
+                    <MessageCircle className="h-4 w-4" />
                 <span>Hablar con B.A.I.</span>
               </Button>
 
               {/* Admin Button - Only visible for admins */}
               {isAdmin && (
                 <Link
-                  href="https://n8n.baibussines.com"
+                  href={process.env.NEXT_PUBLIC_N8N_URL || "http://localhost:5678"}
                   target="_blank"
                   rel="noopener noreferrer"
                 >

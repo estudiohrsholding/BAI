@@ -110,7 +110,7 @@ export default function SoftwarePage() {
       {/* Dark Background with Spotlight Effect */}
       <div className="absolute inset-0 -z-10 pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(139,92,246,0.1),transparent_50%)]" />
-      </div>
+          </div>
 
       <div className="relative w-full px-6 md:px-10 py-12 md:py-20 space-y-16">
         {/* HEADER */}
@@ -138,7 +138,7 @@ export default function SoftwarePage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {BASIC_TOOLS.map((mod) => {
               const Icon = mod.icon;
-              return (
+                    return (
                 <div
                   key={mod.id}
                   className={cn(
@@ -161,7 +161,7 @@ export default function SoftwarePage() {
                     Ver Detalles <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
-              );
+                    );
             })}
           </div>
         </section>
@@ -232,7 +232,7 @@ export default function SoftwarePage() {
               return (
                 <div
                   key={mod.id}
-                  className={cn(
+              className={cn(
                     "group relative bg-black border-2 border-amber-900/30 p-6 rounded-xl",
                     "transition-all duration-500 hover:border-amber-500/50",
                     "hover:shadow-2xl hover:shadow-amber-500/20"
@@ -245,7 +245,7 @@ export default function SoftwarePage() {
                       <div className="p-3 bg-amber-900/20 w-fit rounded-lg border border-amber-500/20">
                         <Icon className="w-6 h-6 text-amber-400" />
                       </div>
-                    </div>
+              </div>
 
                     <h3 className="text-lg font-bold text-amber-100 mb-2">{mod.title}</h3>
                     <p className="text-sm text-amber-500/70 mb-5 min-h-[40px] leading-relaxed">

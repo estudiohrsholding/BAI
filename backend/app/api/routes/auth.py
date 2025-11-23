@@ -42,11 +42,18 @@ class UserResponse(BaseModel):
   email: str
   full_name: str | None
   plan_tier: str
-  role: str
+  role: str | None = "client"  # Optional with default for backward compatibility
   is_active: bool
   
   class Config:
     from_attributes = True
+  
+  @classmethod
+  def model_validate(cls, obj, **kwargs):
+    # Ensure role is always set (backward compatibility for legacy users)
+    if hasattr(obj, 'role') and (obj.role is None or obj.role == ''):
+      obj.role = "client"
+    return super().model_validate(obj, **kwargs)
 
 
 class Token(BaseModel):

@@ -2,8 +2,9 @@
 
 import { ReactNode } from "react";
 import { usePathname } from "next/navigation";
-import { DashboardShell } from "@/components/templates/DashboardShell";
+import { Sidebar } from "@/components/Sidebar";
 import { BaiAvatar } from "@/components/organisms/BaiAvatar";
+import { cn } from "@/lib/utils";
 
 interface PlatformLayoutProps {
   children: ReactNode;
@@ -11,8 +12,8 @@ interface PlatformLayoutProps {
 
 /**
  * Platform Layout - Protected routes layout
- * Contains Sidebar, DashboardShell, and BaiAvatar for authenticated users
- * Automatically applies isFullWidth for routes that need full-bleed design (plans, checkout)
+ * Contains Sidebar and BaiAvatar for authenticated users
+ * The Sidebar is fixed on the left, and content flows on the right
  */
 export default function PlatformLayout({ children }: PlatformLayoutProps) {
   const pathname = usePathname();
@@ -22,10 +23,26 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
   const isFullWidth = fullWidthRoutes.some((route) => pathname.startsWith(route));
 
   return (
-    <>
-      <DashboardShell isFullWidth={isFullWidth}>{children}</DashboardShell>
+    <div className="h-full relative">
+      {/* Sidebar - Fixed on the left, hidden on mobile */}
+      <Sidebar />
+      
+      {/* Main content area with left padding to account for sidebar */}
+      <main
+        className={cn(
+          "md:pl-64 min-h-screen",
+          // Full width pages: no padding, dark background
+          isFullWidth
+            ? "p-0 bg-slate-950 overflow-x-hidden overflow-y-auto"
+            : "p-4 md:p-8 bg-gray-50 overflow-y-auto"
+        )}
+      >
+        {children}
+      </main>
+      
+      {/* BaiAvatar - Chat component */}
       <BaiAvatar />
-    </>
+    </div>
   );
 }
 

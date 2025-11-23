@@ -5,15 +5,12 @@
 
 /**
  * Get the backend API base URL
- * FINAL FIX: Hardcoded secure production domain to bypass environment variable precedence issues
- * in the Next.js compilation cache.
- * 
- * NOTE: This is a temporary solution to resolve runtime environment variable reading issues.
- * The production URL is hardcoded to ensure reliable API connectivity.
+ * Uses NEXT_PUBLIC_API_URL environment variable if it exists.
+ * Falls back to localhost:8000 ONLY if the env var is missing (development default).
  */
 export function getApiUrl(): string {
-  // FINAL FIX: We hardcode the secure domain to bypass environment variable precedence issues in the Next.js compilation cache.
-  return "https://api.baibussines.com";
+  // Use environment variable if set, otherwise fallback to localhost for development
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 }
 
 /**

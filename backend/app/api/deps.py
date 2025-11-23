@@ -59,5 +59,12 @@ async def get_current_user(
       detail="Inactive user"
     )
   
+  # Ensure role is set (backward compatibility for legacy users)
+  if not hasattr(user, 'role') or user.role is None or user.role == '':
+    user.role = "client"
+    session.add(user)
+    session.commit()
+    session.refresh(user)
+  
   return user
 

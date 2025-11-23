@@ -13,6 +13,7 @@ interface User {
   email: string;
   full_name: string | null;
   plan_tier: string;
+  role?: string;
   is_active: boolean;
 }
 

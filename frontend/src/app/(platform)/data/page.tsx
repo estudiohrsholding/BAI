@@ -70,35 +70,35 @@ export default function DataPage() {
         </div>
 
         {/* Section 1: Latest Reports - Static placeholder cards (dark slate cards) */}
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-lg">
-          <h2 className="mb-4 text-lg font-semibold text-green-400">Latest Reports</h2>
-          <div className="space-y-3">
-            <div className="rounded border border-slate-700 bg-slate-800 p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-mono text-sm font-medium text-green-400">
-                  market_analysis_2024.json
-                </h3>
-                <span className="rounded bg-green-900/30 px-2 py-1 text-xs font-mono text-green-400">
-                  COMPLETE
-                </span>
+          <div className="rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-lg">
+            <h2 className="mb-4 text-lg font-semibold text-green-400">Latest Reports</h2>
+            <div className="space-y-3">
+              <div className="rounded border border-slate-700 bg-slate-800 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="font-mono text-sm font-medium text-green-400">
+                    market_analysis_2024.json
+                  </h3>
+                  <span className="rounded bg-green-900/30 px-2 py-1 text-xs font-mono text-green-400">
+                    COMPLETE
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Generated: 2024-01-15 14:32:18 | Sources: 47 | Status: Ready
+                </p>
               </div>
-              <p className="text-xs text-slate-400">
-                Generated: 2024-01-15 14:32:18 | Sources: 47 | Status: Ready
-              </p>
-            </div>
-            <div className="rounded border border-slate-700 bg-slate-800 p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-mono text-sm font-medium text-green-400">
-                  competitor_intel_q1.json
-                </h3>
-                <span className="rounded bg-yellow-900/30 px-2 py-1 text-xs font-mono text-yellow-400">
-                  PROCESSING
-                </span>
+              <div className="rounded border border-slate-700 bg-slate-800 p-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="font-mono text-sm font-medium text-green-400">
+                    competitor_intel_q1.json
+                  </h3>
+                  <span className="rounded bg-yellow-900/30 px-2 py-1 text-xs font-mono text-yellow-400">
+                    PROCESSING
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400">
+                  Generated: 2024-01-15 14:28:45 | Sources: 23 | Status: Analyzing...
+                </p>
               </div>
-              <p className="text-xs text-slate-400">
-                Generated: 2024-01-15 14:28:45 | Sources: 23 | Status: Analyzing...
-              </p>
-            </div>
             <div className="rounded border border-slate-700 bg-slate-800 p-4">
               <div className="mb-2 flex items-center justify-between">
                 <h3 className="font-mono text-sm font-medium text-green-400">
@@ -112,44 +112,44 @@ export default function DataPage() {
                 Generated: 2024-01-15 14:15:33 | Sources: 62 | Status: Ready
               </p>
             </div>
+            </div>
           </div>
-        </div>
 
         {/* Section 2: Live Feed - Map through logs state, display like terminal log */}
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-lg">
-          <h2 className="mb-4 text-lg font-semibold text-green-400">Live Search Feed</h2>
+          <div className="rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-lg">
+            <h2 className="mb-4 text-lg font-semibold text-green-400">Live Search Feed</h2>
           {logs.length === 0 ? (
-            <div className="rounded border border-slate-700 bg-slate-800 p-3">
+              <div className="rounded border border-slate-700 bg-slate-800 p-3">
               <div className="flex items-center gap-2 font-mono text-sm text-slate-400">
-                <span className="text-yellow-400">[INFO]</span>
-                <span>No active intelligence operations yet.</span>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-2 font-mono text-sm">
-              {logs.map((log) => (
-                <div key={log.id} className="rounded border border-slate-700 bg-slate-800 p-3">
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <span className={log.status === "completed" ? "text-green-400" : "text-red-400"}>
-                      [INFO]
-                    </span>
-                    <span>
-                      Query: "{log.query}" | Time: {new Date(log.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
+                  <span className="text-yellow-400">[INFO]</span>
+                  <span>No active intelligence operations yet.</span>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ) : (
+              <div className="space-y-2 font-mono text-sm">
+                {logs.map((log) => (
+                  <div key={log.id} className="rounded border border-slate-700 bg-slate-800 p-3">
+                    <div className="flex items-center gap-2 text-slate-400">
+                      <span className={log.status === "completed" ? "text-green-400" : "text-red-400"}>
+                        [INFO]
+                      </span>
+                      <span>
+                        Query: "{log.query}" | Time: {new Date(log.timestamp).toLocaleTimeString()}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
         {/* Footer: Fake terminal input line */}
-        <div className="rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-lg">
+          <div className="rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-lg">
           <div className="flex items-center gap-2">
-            <span className="font-mono text-xs text-green-400">$</span>
-            <span className="font-mono text-sm text-slate-300">bai-data-mining --status</span>
+              <span className="font-mono text-xs text-green-400">$</span>
+              <span className="font-mono text-sm text-slate-300">bai-data-mining --status</span>
           </div>
         </div>
-    </div>
+      </div>
   );
 }
