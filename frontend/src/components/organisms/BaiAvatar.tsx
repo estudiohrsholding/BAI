@@ -19,10 +19,10 @@ export function BaiAvatar() {
     setIsChatOpen((prev) => !prev);
   };
 
-  // Auto-open chat if automation_consult action is present
+  // Auto-open chat if automation_consult or software_consult action is present
   useEffect(() => {
     const action = searchParams.get("action");
-    if (action === "automation_consult" && !isChatOpen) {
+    if ((action === "automation_consult" || action === "software_consult") && !isChatOpen) {
       setIsChatOpen(true);
     }
   }, [searchParams, isChatOpen]);

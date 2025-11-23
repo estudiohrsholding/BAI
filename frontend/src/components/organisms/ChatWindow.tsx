@@ -168,11 +168,12 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
     await sendMessage(userMessage);
   };
 
-  // Auto-open and auto-send for automation consultation
+  // Auto-open and auto-send for automation or software consultation
   useEffect(() => {
     if (!isOpen || isLoadingHistory) return;
 
     const action = searchParams.get("action");
+    const module = searchParams.get("module");
     
     if (action === "automation_consult" && !hasAutoSent) {
       // Clean URL by removing query param, redirect to dashboard
@@ -182,6 +183,17 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
       // Wait a bit for chat to be fully ready, then auto-send
       setTimeout(() => {
         const autoMessage = "Quiero automatizar mi negocio. Inicia el análisis.";
+        sendMessage(autoMessage);
+      }, 500);
+    } else if (action === "software_consult" && !hasAutoSent) {
+      // Clean URL by removing query param, redirect to dashboard
+      router.replace("/dashboard");
+      setHasAutoSent(true);
+      
+      // Wait a bit for chat to be fully ready, then auto-send
+      setTimeout(() => {
+        const moduleText = module ? ` sobre el módulo "${module}"` : "";
+        const autoMessage = `Me interesa solicitar una demo${moduleText}. ¿Puedes ayudarme?`;
         sendMessage(autoMessage);
       }, 500);
     }

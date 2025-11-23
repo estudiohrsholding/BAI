@@ -2,165 +2,181 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { AppWindow, ArrowRight, ExternalLink, Leaf } from "lucide-react";
+import {
+  Calendar,
+  CreditCard,
+  Image,
+  MessageSquare,
+  QrCode,
+  AppWindow,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/atoms/Button";
 
-interface SoftwareApp {
+type ModuleCategory = "Management" | "Growth" | "UI";
+type FilterCategory = "Todos" | "Gestión" | "Ventas";
+
+interface Module {
   id: string;
   name: string;
   description: string;
-  url: string;
-  icon?: React.ComponentType<{ className?: string }>;
-  logoUrl?: string;
-  status: string;
-  color: string;
-  bgColor: string;
+  category: ModuleCategory;
+  icon: React.ComponentType<{ className?: string }>;
 }
 
-const SOFTWARE_PORTFOLIO: SoftwareApp[] = [
+const MODULES: Module[] = [
   {
-    id: "cannabiapp",
-    name: "Cannabiapp",
-    description:
-      "The ultimate management platform for associations and clubs. Control members, stock, and dispensing in one place.",
-    url: "https://cannabiapp.com",
-    logoUrl: "https://www.google.com/s2/favicons?domain=cannabiapp.com&sz=128",
-    icon: Leaf,
-    status: "Live",
-    color: "text-green-500",
-    bgColor: "bg-green-500/10",
+    id: "appointments",
+    name: "Sistema de Citas",
+    description: "Calendario interactivo con recordatorios WhatsApp.",
+    category: "Management",
+    icon: Calendar,
+  },
+  {
+    id: "payments",
+    name: "Pasarela de Pagos",
+    description: "Cobros con tarjeta (Stripe) integrados.",
+    category: "Management",
+    icon: CreditCard,
+  },
+  {
+    id: "gallery",
+    name: "Galería Inmersiva",
+    description: "Showcase de productos con efecto Parallax.",
+    category: "UI",
+    icon: Image,
+  },
+  {
+    id: "sales-chatbot",
+    name: "Chatbot Ventas",
+    description: "Asistente IA entrenado con tus datos.",
+    category: "Growth",
+    icon: MessageSquare,
+  },
+  {
+    id: "loyalty",
+    name: "Fidelización QR",
+    description: "Sistema de puntos y escaneo para clientes.",
+    category: "Growth",
+    icon: QrCode,
   },
 ];
 
-// Component to handle logo with fallback - extracted outside map to follow React Hooks rules
-interface LogoOrIconProps {
-  logoUrl?: string;
-  Icon?: React.ComponentType<{ className?: string }>;
-  color: string;
-  name: string;
-}
-
-function LogoOrIcon({ logoUrl, Icon, color, name }: LogoOrIconProps) {
-  const [logoError, setLogoError] = useState(false);
-
-  if (logoUrl && !logoError) {
-    // Use regular img tag for external URLs with error handling
-    // Next.js Image component doesn't support onError
-    return (
-      <img
-        src={logoUrl}
-        alt={`${name} logo`}
-        className="h-12 w-12 rounded-md object-contain"
-        onError={() => setLogoError(true)}
-        onLoad={() => setLogoError(false)}
-      />
-    );
-  }
-
-  if (Icon) {
-    return <Icon className={cn("h-6 w-6", color)} />;
-  }
-
-  return null;
-}
+const CATEGORY_MAP: Record<ModuleCategory, FilterCategory> = {
+  Management: "Gestión",
+  Growth: "Ventas",
+  UI: "Gestión", // UI modules can be shown under "Gestión" filter
+};
 
 export default function SoftwarePage() {
   const router = useRouter();
+  const [activeFilter, setActiveFilter] = useState<FilterCategory>("Todos");
 
-  const handleChatRedirect = () => {
-    router.push("/dashboard?action=automation_consult");
+  const handleRequestDemo = (moduleName: string) => {
+    // Navigate to dashboard with software consultation action
+    router.push(`/dashboard?action=software_consult&module=${encodeURIComponent(moduleName)}`);
   };
+
+  const getFilteredModules = () => {
+    if (activeFilter === "Todos") {
+      return MODULES;
+    }
+    return MODULES.filter((module) => CATEGORY_MAP[module.category] === activeFilter);
+  };
+
+  const filteredModules = getFilteredModules();
 
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-100">
-          <AppWindow className="h-6 w-6 text-purple-600" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Software Suite</h1>
-          <p className="text-sm text-gray-600">Developed Solutions & Monetized Products</p>
-        </div>
+      <div>
+        <h1 className="text-4xl font-bold text-gray-900">Catálogo de Módulos</h1>
+        <p className="mt-2 text-lg text-gray-600">
+          Elige las piezas. Nosotros ensamblamos tu App.
+        </p>
       </div>
 
-      {/* Live Apps Grid */}
-      {SOFTWARE_PORTFOLIO.length > 0 && (
-        <div>
-          <h2 className="mb-4 text-xl font-semibold text-gray-900">Live Applications</h2>
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {SOFTWARE_PORTFOLIO.map((app) => {
-              return (
-                <a
-                  key={app.id}
-                  href={app.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={cn(
-                    "group relative overflow-hidden rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-lg hover:border-gray-300"
-                  )}
-                >
-                  {/* Logo or Icon */}
-                  <div className={cn("mb-4 flex h-12 w-12 items-center justify-center rounded-md", app.bgColor)}>
-                    <LogoOrIcon logoUrl={app.logoUrl} Icon={app.icon} color={app.color} name={app.name} />
-                  </div>
-
-                  {/* Content */}
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between">
-                      <h3 className="text-lg font-semibold text-gray-900">{app.name}</h3>
-                      <ExternalLink className="h-4 w-4 text-gray-400 transition-colors group-hover:text-gray-600" />
-                    </div>
-
-                    <p className="text-sm text-gray-600">{app.description}</p>
-
-                    {/* Status Badge */}
-                    <div className="flex items-center gap-2">
-                      <span className={cn("rounded-full px-2 py-1 text-xs font-medium", app.bgColor, app.color)}>
-                        {app.status}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Hover Effect */}
-                  <div className="absolute inset-0 -z-10 bg-gradient-to-br from-purple-50 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
-                </a>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* In Development Section */}
-      <div>
-        <h2 className="mb-4 text-xl font-semibold text-gray-900">In Development</h2>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {/* Placeholder Card */}
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3">
+        {(["Todos", "Gestión", "Ventas"] as FilterCategory[]).map((filter) => (
           <button
-            onClick={handleChatRedirect}
+            key={filter}
+            onClick={() => setActiveFilter(filter)}
             className={cn(
-              "group relative overflow-hidden rounded-lg border-2 border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-gray-100 p-6 text-left transition-all duration-200 hover:border-purple-400 hover:bg-gradient-to-br hover:from-purple-50 hover:to-gray-50 hover:shadow-md"
+              "rounded-full px-4 py-2 text-sm font-medium transition-all",
+              activeFilter === filter
+                ? "bg-slate-900 text-white shadow-md"
+                : "bg-slate-100 text-slate-700 hover:bg-slate-200"
             )}
           >
-            {/* Icon */}
-            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-lg bg-purple-500/10">
-              <ArrowRight className="h-6 w-6 text-purple-500" />
-            </div>
+            {filter}
+          </button>
+        ))}
+      </div>
 
-            {/* Content */}
-            <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-gray-900">Your Custom App</h3>
-              <p className="text-sm text-gray-600">Do you have an idea? Let B.A.I. build it.</p>
+      {/* Modules Grid */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {filteredModules.map((module) => {
+          const Icon = module.icon;
+          const categoryLabel = CATEGORY_MAP[module.category];
 
-              {/* Call to Action */}
-              <div className="flex items-center gap-2 text-sm font-medium text-purple-600 group-hover:text-purple-700">
-                <span>Talk to B.A.I.</span>
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+          return (
+            <div
+              key={module.id}
+              className={cn(
+                "group relative overflow-hidden rounded-lg border border-slate-200",
+                "bg-white shadow-sm transition-all duration-300",
+                "hover:shadow-lg hover:border-slate-300"
+              )}
+            >
+              {/* Image Area - Placeholder with Icon */}
+              <div className="relative aspect-video bg-slate-800">
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Icon className="h-16 w-16 text-slate-400 transition-transform group-hover:scale-110" />
+                </div>
+                {/* Subtle gradient overlay on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-slate-900/0 to-slate-900/20 opacity-0 transition-opacity group-hover:opacity-100" />
+              </div>
+
+              {/* Content */}
+              <div className="p-6">
+                {/* Category Badge */}
+                <div className="mb-3">
+                  <span className="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">
+                    {categoryLabel}
+                  </span>
+                </div>
+
+                {/* Title */}
+                <h3 className="mb-2 text-xl font-bold text-gray-900">{module.name}</h3>
+
+                {/* Description */}
+                <p className="mb-4 text-sm text-gray-600">{module.description}</p>
+
+                {/* Footer Button */}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRequestDemo(module.name)}
+                  className="w-full"
+                >
+                  Solicitar Demo
+                </Button>
               </div>
             </div>
-          </button>
-        </div>
+          );
+        })}
       </div>
+
+      {/* Empty State (if no modules match filter) */}
+      {filteredModules.length === 0 && (
+        <div className="rounded-lg border border-slate-200 bg-white p-12 text-center">
+          <AppWindow className="mx-auto h-12 w-12 text-slate-400" />
+          <p className="mt-4 text-sm text-gray-600">
+            No hay módulos disponibles en esta categoría.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

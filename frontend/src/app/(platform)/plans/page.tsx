@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { Check, Sparkles, Zap, Shield, Mail, X, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DashboardShell } from "@/components/templates/DashboardShell";
 
 interface Plan {
   name: string;
@@ -121,8 +120,7 @@ export default function PlansPage() {
   };
 
   return (
-    <DashboardShell isFullWidth={true}>
-      <div className="relative min-h-[calc(100vh)] bg-slate-950 text-white overflow-x-hidden">
+    <div className="relative min-h-[calc(100vh)] bg-slate-950 text-white overflow-x-hidden">
         {/* Dark Background with Spotlight Effect */}
         <div className="absolute inset-0 -z-10 pointer-events-none">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(139,92,246,0.1),transparent_50%)]" />
@@ -474,6 +472,5 @@ export default function PlansPage() {
           </div>
         )}
       </div>
-    </DashboardShell>
   );
 }
