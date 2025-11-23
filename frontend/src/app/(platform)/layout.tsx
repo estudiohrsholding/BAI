@@ -24,14 +24,18 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
 
   return (
     <div className="h-full relative">
-      {/* Sidebar - Fixed on the left, hidden on mobile */}
-      <Sidebar />
+      {/* Sidebar Wrapper - Fixed on the left, hidden on mobile */}
+      {/* SIDEBAR_WIDTH = w-64 (256px) */}
+      <div className="hidden h-full md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:left-0 md:top-0 z-[80]">
+        <Sidebar />
+      </div>
       
-      {/* Main content area with left padding to account for sidebar */}
+      {/* Main content area - MUST match sidebar width with padding */}
+      {/* CRITICAL: md:pl-64 MUST match md:w-64 from sidebar wrapper */}
       <main
         className={cn(
           "h-full w-full",
-          "md:pl-64", // Match sidebar width (w-64 = 256px = pl-64)
+          "md:pl-64", // EXACTLY matches sidebar width: w-64 = 256px = pl-64
           // Full width pages: no padding, dark background
           isFullWidth
             ? "p-0 bg-slate-950 overflow-x-hidden overflow-y-auto"
