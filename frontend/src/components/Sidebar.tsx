@@ -49,7 +49,7 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex h-screen w-64 flex-col fixed left-0 top-0 border-r border-slate-800 bg-slate-900 text-white hidden md:flex">
+    <aside className="flex h-screen w-64 flex-col fixed left-0 top-0 z-[80] border-r border-slate-800 bg-slate-900 text-white hidden md:flex">
       {/* Header */}
       <div className="p-6">
         <h1 className="text-2xl font-bold tracking-tighter text-violet-400">

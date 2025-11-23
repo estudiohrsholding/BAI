@@ -30,7 +30,8 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
       {/* Main content area with left padding to account for sidebar */}
       <main
         className={cn(
-          "md:pl-64 min-h-screen",
+          "h-full w-full",
+          "md:pl-64", // Match sidebar width (w-64 = 256px = pl-64)
           // Full width pages: no padding, dark background
           isFullWidth
             ? "p-0 bg-slate-950 overflow-x-hidden overflow-y-auto"
