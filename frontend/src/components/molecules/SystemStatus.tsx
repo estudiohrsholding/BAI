@@ -31,14 +31,14 @@ export function SystemStatus() {
   }, []);
 
   return (
-    <div className="flex items-center gap-2 border-t border-slate-800 px-4 py-3">
+    <div className="flex items-center gap-2 px-0 py-2">
       <span className="text-xs font-medium text-slate-400">System Status:</span>
       <div
         className={cn(
-          "h-3 w-3 rounded-full shadow-sm transition-shadow",
+          "h-2.5 w-2.5 rounded-full shadow-sm transition-shadow",
           isOnline
-            ? "bg-green-500 shadow-green-500/50"
-            : "bg-red-500 shadow-red-500/50"
+            ? "bg-emerald-400 shadow-emerald-400/50"
+            : "bg-rose-500 shadow-rose-500/50"
         )}
         aria-label={isOnline ? "Online" : "Offline"}
       />
