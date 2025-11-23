@@ -20,7 +20,7 @@ export function DashboardShell({ children, isFullWidth = false }: DashboardShell
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className={cn("flex h-screen", isFullWidth ? "bg-slate-950" : "bg-gray-50")}>
+    <div className={cn("flex h-screen overflow-x-hidden", isFullWidth ? "bg-slate-950" : "bg-gray-50")}>
       {/* Mobile Header - Only visible on mobile */}
       <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between bg-slate-900 px-4 md:hidden">
         <h1 className="text-xl font-bold tracking-wide text-white">B.A.I.</h1>
@@ -39,10 +39,10 @@ export function DashboardShell({ children, isFullWidth = false }: DashboardShell
       {/* Main content area */}
       <main
         className={cn(
-          "flex-1 md:ml-64",
+          "flex-1 md:ml-64 overflow-x-hidden",
           // Full width pages: no padding, prevent horizontal scroll, relative positioning
           isFullWidth
-            ? "w-full p-0 bg-slate-950 overflow-x-hidden overflow-y-auto relative"
+            ? "w-full p-0 bg-slate-950 overflow-y-auto relative"
             : "w-full p-4 md:p-8 bg-gray-50 overflow-y-auto",
           // Add top padding on mobile to account for fixed header
           "pt-20 md:pt-0"

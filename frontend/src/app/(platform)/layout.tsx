@@ -23,7 +23,7 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
   const isFullWidth = fullWidthRoutes.some((route) => pathname.startsWith(route));
 
   return (
-    <div className="h-full relative">
+    <div className="h-full relative overflow-x-hidden">
       {/* Sidebar Wrapper - Fixed on the left, hidden on mobile */}
       {/* SIDEBAR_WIDTH = w-64 (256px) */}
       <div className="hidden h-full md:flex md:w-64 md:flex-col md:fixed md:inset-y-0 md:left-0 md:top-0 z-[80]">
@@ -34,11 +34,11 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
       {/* CRITICAL: md:pl-64 MUST match md:w-64 from sidebar wrapper */}
       <main
         className={cn(
-          "h-full w-full",
+          "h-full w-full overflow-x-hidden",
           "md:pl-64", // EXACTLY matches sidebar width: w-64 = 256px = pl-64
           // Full width pages: no padding, dark background
           isFullWidth
-            ? "p-0 bg-slate-950 overflow-x-hidden overflow-y-auto"
+            ? "p-0 bg-slate-950 overflow-y-auto"
             : "p-4 md:p-8 bg-gray-50 overflow-y-auto"
         )}
       >

@@ -79,41 +79,42 @@ export default function DashboardPage() {
     return user?.email?.split("@")[0] || "Admin";
   };
 
-  // Get plan tier display
-  const getPlanTierDisplay = (tier: string) => {
-    const tierMap: Record<string, { label: string; color: string }> = {
-      basic: { label: "PLAN BASIC", color: "bg-slate-100 text-slate-700 border-slate-200" },
-      premium: { label: "PREMIUM", color: "bg-blue-100 text-blue-700 border-blue-200" },
-      enterprise: { label: "ENTERPRISE", color: "bg-amber-100 text-amber-700 border-amber-300" }
-    };
-    return tierMap[tier.toLowerCase()] || tierMap.basic;
-  };
-
   const greeting = getGreeting();
   const userName = getUserName();
   const planTier = user?.plan_tier || "basic";
-  const planDisplay = getPlanTierDisplay(planTier);
   const isEnterprise = planTier.toLowerCase() === "enterprise";
 
   if (isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-pulse rounded-full bg-slate-200" />
-          <p className="mt-4 text-sm text-slate-600">Loading command center...</p>
+          <div className="mx-auto h-12 w-12 animate-pulse rounded-full bg-slate-800" />
+          <p className="mt-4 text-sm text-slate-400">Loading command center...</p>
         </div>
       </div>
     );
   }
 
+  // Get plan tier display with dark theme colors
+  const getPlanTierDisplayDark = (tier: string) => {
+    const tierMap: Record<string, { label: string; color: string }> = {
+      basic: { label: "PLAN BASIC", color: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" },
+      premium: { label: "PREMIUM", color: "bg-violet-500/20 text-violet-400 border-violet-500/30" },
+      enterprise: { label: "ENTERPRISE", color: "bg-amber-500/20 text-amber-400 border-amber-500/30" }
+    };
+    return tierMap[tier.toLowerCase()] || tierMap.basic;
+  };
+
+  const planDisplayDark = getPlanTierDisplayDark(planTier);
+
   return (
     <div className="w-full space-y-8">
       {/* Command Center Header */}
-      <div className="border-b border-slate-200 pb-6">
+      <div className="border-b border-slate-800 pb-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Panel de Control</h1>
-            <p className="mt-2 text-base text-slate-600">
+            <h1 className="text-3xl font-bold text-white">Panel de Control</h1>
+            <p className="mt-2 text-base text-slate-400">
               {greeting}, {userName}. Systems are optimal.
             </p>
           </div>
@@ -121,11 +122,11 @@ export default function DashboardPage() {
             <span
               className={cn(
                 "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-wide",
-                planDisplay.color
+                planDisplayDark.color
               )}
             >
               {isEnterprise && <Crown className="h-3 w-3" />}
-              {planDisplay.label}
+              {planDisplayDark.label}
             </span>
           </div>
         </div>
@@ -137,25 +138,25 @@ export default function DashboardPage() {
         <Link
           href="/automation"
           className={cn(
-            "group relative overflow-hidden rounded-lg",
-            "border border-slate-200 bg-white",
-            "shadow-sm transition-all duration-200",
-            "hover:shadow-lg hover:border-slate-300",
+            "group relative overflow-hidden rounded-xl",
+            "border border-slate-800 bg-slate-900/80 backdrop-blur",
+            "shadow-lg transition-all duration-300",
+            "hover:shadow-emerald-500/10 hover:border-emerald-500/50 hover:-translate-y-1",
             "p-8 flex flex-col"
           )}
         >
           <div className="flex items-start justify-between mb-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-slate-50">
-              <Workflow className="h-10 w-10 text-slate-800" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <Workflow className="h-10 w-10 text-emerald-400" />
             </div>
-            <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              <span className="text-xs font-medium text-emerald-700">Active</span>
+            <div className="flex items-center gap-2 rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              <span className="text-xs font-medium text-emerald-400">Active</span>
             </div>
           </div>
           <div className="flex-1">
-            <h2 className="mb-2 text-xl font-semibold text-slate-900">Automation</h2>
-            <p className="text-sm text-slate-600">
+            <h2 className="mb-2 text-xl font-semibold text-white">Automation</h2>
+            <p className="text-sm text-slate-400">
               Orchestrate workflows & AI agents for seamless business operations.
             </p>
           </div>
@@ -165,30 +166,30 @@ export default function DashboardPage() {
         <Link
           href="/software"
           className={cn(
-            "group relative overflow-hidden rounded-lg",
-            "border border-slate-200 bg-white",
-            "shadow-sm transition-all duration-200",
-            "hover:shadow-lg hover:border-slate-300",
+            "group relative overflow-hidden rounded-xl",
+            "border border-slate-800 bg-slate-900/80 backdrop-blur",
+            "shadow-lg transition-all duration-300",
+            "hover:shadow-violet-500/10 hover:border-violet-500/50 hover:-translate-y-1",
             "p-8 flex flex-col"
           )}
         >
           <div className="flex items-start justify-between mb-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-slate-50">
-              <AppWindow className="h-10 w-10 text-slate-800" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-violet-500/10 border border-violet-500/20">
+              <AppWindow className="h-10 w-10 text-violet-400" />
             </div>
-            <div className="flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1">
-              <Code2 className="h-4 w-4 text-blue-600" />
-              <span className="text-xs font-medium text-blue-700">Development</span>
+            <div className="flex items-center gap-2 rounded-full bg-violet-500/20 border border-violet-500/30 px-3 py-1">
+              <Code2 className="h-4 w-4 text-violet-400" />
+              <span className="text-xs font-medium text-violet-400">Development</span>
             </div>
           </div>
           <div className="flex-1">
             <div className="mb-2 flex items-center gap-2">
-              <h2 className="text-xl font-semibold text-slate-900">Software</h2>
-              {!isEnterprise && <Lock className="h-4 w-4 text-slate-400" />}
+              <h2 className="text-xl font-semibold text-white">Software</h2>
+              {!isEnterprise && <Lock className="h-4 w-4 text-slate-500" />}
             </div>
             <p
               className={cn(
-                "text-sm text-slate-600",
+                "text-sm text-slate-400",
                 !isEnterprise && "blur-[1px] opacity-60"
               )}
             >
@@ -201,33 +202,33 @@ export default function DashboardPage() {
         <Link
           href="/data"
           className={cn(
-            "group relative overflow-hidden rounded-lg",
-            "border border-slate-200 bg-white",
-            "shadow-sm transition-all duration-200",
-            "hover:shadow-lg hover:border-slate-300",
+            "group relative overflow-hidden rounded-xl",
+            "border border-slate-800 bg-slate-900/80 backdrop-blur",
+            "shadow-lg transition-all duration-300",
+            "hover:shadow-amber-500/10 hover:border-amber-500/50 hover:-translate-y-1",
             "p-8 flex flex-col",
             !isEnterprise && "opacity-75"
           )}
         >
           <div className="flex items-start justify-between mb-6">
-            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-slate-50">
-              <DatabaseZap className="h-10 w-10 text-slate-800" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <DatabaseZap className="h-10 w-10 text-amber-400" />
             </div>
             {!isEnterprise && (
-              <div className="flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1">
-                <Lock className="h-4 w-4 text-slate-500" />
-                <span className="text-xs font-medium text-slate-600">Premium</span>
+              <div className="flex items-center gap-2 rounded-full bg-slate-800 border border-slate-700 px-3 py-1">
+                <Lock className="h-4 w-4 text-slate-400" />
+                <span className="text-xs font-medium text-slate-400">Premium</span>
               </div>
             )}
           </div>
           <div className="flex-1">
             <div className="mb-2 flex items-center gap-2">
-              <h2 className="text-xl font-semibold text-slate-900">Data Mining</h2>
-              {!isEnterprise && <Lock className="h-4 w-4 text-slate-400" />}
+              <h2 className="text-xl font-semibold text-white">Data Mining</h2>
+              {!isEnterprise && <Lock className="h-4 w-4 text-slate-500" />}
             </div>
             <p
               className={cn(
-                "text-sm text-slate-600",
+                "text-sm text-slate-400",
                 !isEnterprise && "blur-[1px] opacity-60"
               )}
             >
@@ -240,10 +241,10 @@ export default function DashboardPage() {
       {/* Subscription Status Widget */}
       <div
         className={cn(
-          "rounded-lg border p-6",
+          "rounded-xl border p-6 backdrop-blur",
           isEnterprise
-            ? "border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50"
-            : "border-slate-200 bg-slate-50"
+            ? "border-amber-500/30 bg-gradient-to-r from-amber-500/10 to-yellow-500/10"
+            : "border-slate-800 bg-slate-900/50"
         )}
       >
         <div className="flex items-center justify-between">
@@ -251,21 +252,21 @@ export default function DashboardPage() {
             {isEnterprise ? (
               <div>
                 <div className="mb-2 flex items-center gap-2">
-                  <Crown className="h-5 w-5 text-amber-600" />
-                  <h3 className="text-lg font-semibold text-slate-900">
+                  <Crown className="h-5 w-5 text-amber-400" />
+                  <h3 className="text-lg font-semibold text-white">
                     Enterprise Status
                   </h3>
                 </div>
-                <p className="text-sm text-slate-700">
+                <p className="text-sm text-slate-400">
                   You are running on maximum power. B.A.I. is fully dedicated to you.
                 </p>
               </div>
             ) : (
               <div>
-                <h3 className="mb-2 text-lg font-semibold text-slate-900">
+                <h3 className="mb-2 text-lg font-semibold text-white">
                   Subscription Status
                 </h3>
-                <p className="text-sm text-slate-700">
+                <p className="text-sm text-slate-400">
                   You are limiting your potential. Unlock Data Mining & Priority Support.
                 </p>
               </div>
@@ -275,7 +276,7 @@ export default function DashboardPage() {
             <div>
               <Link 
                 href="/plans"
-                className="inline-block whitespace-nowrap rounded-md bg-blue-600 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                className="inline-block whitespace-nowrap rounded-md bg-gradient-to-r from-violet-600 to-fuchsia-600 px-6 py-3 text-base font-semibold text-white transition-all hover:from-violet-500 hover:to-fuchsia-500 hover:shadow-lg hover:shadow-violet-500/30 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-slate-900"
               >
                 Upgrade to Premium
               </Link>
