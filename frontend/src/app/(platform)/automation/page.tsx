@@ -71,6 +71,8 @@ export default function AutomationPage() {
         });
 
         if (response.status === 401) {
+          // Token is invalid or expired - remove it and redirect to login
+          Cookies.remove("bai_token");
           router.push("/login");
           return;
         }

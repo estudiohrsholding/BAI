@@ -61,7 +61,8 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
         });
 
         if (response.status === 401) {
-          // Unauthorized - redirect to login
+          // Token is invalid or expired - remove it and redirect to login
+          Cookies.remove("bai_token");
           router.push("/login");
           return;
         }
@@ -137,6 +138,8 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
       });
 
       if (response.status === 401) {
+        // Token is invalid or expired - remove it and redirect to login
+        Cookies.remove("bai_token");
         router.push("/login");
         return;
       }
