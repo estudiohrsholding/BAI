@@ -101,29 +101,19 @@ export default function MarketingPage() {
               </button>
             </div>
 
-            {/* Dashboard Preview Visual */}
+            {/* Promotional Video */}
             <div className="pt-12 max-w-5xl mx-auto">
               <div className="relative aspect-video rounded-xl border border-slate-800 bg-slate-900 shadow-2xl shadow-blue-500/20 overflow-hidden">
-                {/* Glow Effect */}
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10" />
-                
-                {/* Content */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="text-center space-y-4">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-800/50 backdrop-blur-sm border border-slate-700">
-                      <CheckCircle className="h-5 w-5 text-green-400" />
-                      <span className="text-slate-300 font-medium">Live Preview</span>
-                    </div>
-                    <p className="text-2xl font-semibold text-slate-200">Dashboard Preview</p>
-                    <p className="text-sm text-slate-400">Experience the B.A.I. Platform</p>
-                  </div>
-                </div>
-
-                {/* Grid Pattern Overlay */}
-                <div className="absolute inset-0 opacity-5" style={{
-                  backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-                  backgroundSize: '50px 50px'
-                }} />
+                <video
+                  className="w-full h-full object-cover rounded-xl"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  src="/videos/Generación_de_Video_Promocional_BAI.mp4"
+                >
+                  Tu navegador no soporta el tag de video.
+                </video>
               </div>
             </div>
           </div>
