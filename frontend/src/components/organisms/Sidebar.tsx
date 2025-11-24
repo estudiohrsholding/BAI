@@ -61,7 +61,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       {/* Sidebar - Fixed position, w-64, z-50 */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-50",
+          "fixed top-0 left-0 bottom-0 z-50 w-64 bg-slate-900 text-slate-50 border-r border-slate-800",
           "transform transition-transform duration-300 ease-in-out",
           // Mobile: slide in/out based on isOpen
           // Desktop: always visible (md:translate-x-0 overrides mobile state)

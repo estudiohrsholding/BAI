@@ -43,17 +43,23 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
       {/* Main content area - MUST match sidebar width with padding */}
-      {/* CRITICAL: md:pl-64 MUST match md:w-64 from sidebar */}
+      {/* CRITICAL: md:pl-64 MUST match md:w-64 from sidebar (256px) */}
       <main
         className={cn(
-          "min-h-screen w-full overflow-x-hidden",
-          "md:pl-64", // EXACTLY matches sidebar width: w-64 = 256px = pl-64
+          "relative min-h-screen box-border overflow-x-hidden",
+          // Width: full width, padding will push content to the right
+          "w-full",
+          // DESKTOP: Padding left to account for fixed sidebar (w-64 = 256px = pl-64)
+          // This ensures content starts AFTER the sidebar
+          "md:pl-64",
           // Full width pages: no padding, dark background
           isFullWidth
             ? "p-0 bg-slate-950 overflow-y-auto"
             : "p-4 md:p-8 bg-slate-950 overflow-y-auto",
           // Add top padding on mobile to account for fixed header
-          "pt-16 md:pt-0"
+          "pt-16 md:pt-0",
+          // Ensure main is below sidebar in z-index
+          "z-10"
         )}
       >
         {children}

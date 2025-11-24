@@ -109,19 +109,24 @@ export default function DashboardPage() {
 
   return (
     <div className="w-full space-y-8">
-      {/* Command Center Header */}
-      <div className="border-b border-slate-800 pb-6">
-        <div className="flex items-center justify-between">
+      {/* Command Center Header with Cyberpunk Style */}
+      <div className="relative border-b border-slate-800 pb-6">
+        {/* Subtle gradient background effect */}
+        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-violet-500/5 via-transparent to-emerald-500/5 opacity-50" />
+        
+        <div className="flex items-center justify-between relative">
           <div>
-            <h1 className="text-3xl font-bold text-white">Panel de Control</h1>
+            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-400 bg-clip-text text-transparent">
+              Panel de Control
+            </h1>
             <p className="mt-2 text-base text-slate-400">
-              {greeting}, {userName}. Systems are optimal.
+              {greeting}, <span className="text-violet-400 font-medium">{userName}</span>. Systems are optimal.
             </p>
           </div>
           <div className="flex items-center gap-3">
             <span
               className={cn(
-                "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-wide",
+                "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-wide shadow-lg",
                 planDisplayDark.color
               )}
             >
@@ -132,7 +137,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Services Grid */}
+      {/* Services Grid - Cyberpunk Command Center Style */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
         {/* Service 1: Automation */}
         <Link
@@ -141,8 +146,9 @@ export default function DashboardPage() {
             "group relative overflow-hidden rounded-xl",
             "border border-slate-800 bg-slate-900/80 backdrop-blur",
             "shadow-lg transition-all duration-300",
-            "hover:shadow-emerald-500/10 hover:border-emerald-500/50 hover:-translate-y-1",
-            "p-8 flex flex-col"
+            "hover:shadow-emerald-500/20 hover:border-emerald-500/50 hover:-translate-y-1",
+            "p-8 flex flex-col",
+            "before:absolute before:inset-0 before:bg-gradient-to-br before:from-emerald-500/0 before:to-emerald-500/5 before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300"
           )}
         >
           <div className="flex items-start justify-between mb-6">
@@ -169,8 +175,9 @@ export default function DashboardPage() {
             "group relative overflow-hidden rounded-xl",
             "border border-slate-800 bg-slate-900/80 backdrop-blur",
             "shadow-lg transition-all duration-300",
-            "hover:shadow-violet-500/10 hover:border-violet-500/50 hover:-translate-y-1",
-            "p-8 flex flex-col"
+            "hover:shadow-violet-500/20 hover:border-violet-500/50 hover:-translate-y-1",
+            "p-8 flex flex-col",
+            "before:absolute before:inset-0 before:bg-gradient-to-br before:from-violet-500/0 before:to-fuchsia-500/5 before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300"
           )}
         >
           <div className="flex items-start justify-between mb-6">
@@ -205,8 +212,9 @@ export default function DashboardPage() {
             "group relative overflow-hidden rounded-xl",
             "border border-slate-800 bg-slate-900/80 backdrop-blur",
             "shadow-lg transition-all duration-300",
-            "hover:shadow-amber-500/10 hover:border-amber-500/50 hover:-translate-y-1",
+            "hover:shadow-amber-500/20 hover:border-amber-500/50 hover:-translate-y-1",
             "p-8 flex flex-col",
+            "before:absolute before:inset-0 before:bg-gradient-to-br before:from-amber-500/0 before:to-yellow-500/5 before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-300",
             !isEnterprise && "opacity-75"
           )}
         >

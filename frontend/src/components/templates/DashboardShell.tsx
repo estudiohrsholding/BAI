@@ -20,10 +20,7 @@ export function DashboardShell({ children, isFullWidth = false }: DashboardShell
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className={cn(
-      "min-h-screen bg-slate-950 text-slate-50 relative overflow-x-hidden",
-      "flex flex-col"
-    )}>
+    <div className="min-h-screen bg-slate-950 text-slate-50 relative overflow-x-hidden">
       {/* Mobile Header - Only visible on mobile */}
       <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between bg-slate-900 border-b border-slate-800 px-4 md:hidden">
         <h1 className="text-xl font-bold tracking-wide text-violet-400">B.A.I.</h1>
@@ -39,17 +36,23 @@ export function DashboardShell({ children, isFullWidth = false }: DashboardShell
       {/* Sidebar with responsive behavior */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
-      {/* Main content area - MUST have md:ml-64 to offset fixed sidebar */}
+      {/* Main content area - PADDING STRATEGY: Use padding-left for fixed sidebar */}
+      {/* NOTE: This component should NOT be used inside PlatformLayout as it duplicates the sidebar */}
+      {/* If used standalone, it handles its own sidebar spacing */}
       <main
         className={cn(
-          "flex-1 w-full overflow-x-hidden",
-          "md:ml-64", // CRITICAL: Offset for fixed sidebar (w-64 = 256px)
-          // Full width pages: no padding, dark background
+          "min-h-screen w-full transition-all duration-200 ease-in-out",
+          // PADDING STRATEGY: Push content 64 units (16rem/256px) to the right
+          // Padding is more reliable than margin for fixed sidebar layouts
+          "md:pl-64",
+          // MOBILE: Top padding for fixed header
+          "pt-16 md:pt-0",
+          // CONTENT STYLE:
           isFullWidth
             ? "p-0 bg-slate-950 overflow-y-auto"
             : "p-4 md:p-8 bg-slate-950 overflow-y-auto",
-          // Add top padding on mobile to account for fixed header
-          "pt-16 md:pt-0"
+          // Prevent horizontal overflow
+          "overflow-x-hidden"
         )}
       >
         {children}
