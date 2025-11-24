@@ -1,155 +1,409 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
-import { DatabaseZap } from "lucide-react";
-import { getDataLogsUrl } from "@/lib/api";
+import { useState } from "react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Radar,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+} from "recharts";
+import { DatabaseZap, TrendingUp, Star, AlertTriangle, Sparkles } from "lucide-react";
+import { Button } from "@/components/atoms/Button";
+import { PageContainer, PageItem } from "@/components/ui/PageAnimation";
+import { cn } from "@/lib/utils";
 
-interface SearchLog {
-  id: number;
-  query: string;
-  summary: string;
-  timestamp: string;
-  status: string;
-}
+// Mock Data: Coffee Shop in Madrid Analysis
+const mockData = {
+  marketViability: 78,
+  competitionDensity: "Med",
+  searchTrends: [
+    { month: "Ene", searches: 1200 },
+    { month: "Feb", searches: 1450 },
+    { month: "Mar", searches: 1680 },
+    { month: "Abr", searches: 1920 },
+    { month: "May", searches: 2100 },
+    { month: "Jun", searches: 2350 },
+  ],
+  sentimentAnalysis: [
+    { name: "Positivo", value: 65, color: "#10b981" },
+    { name: "Neutral", value: 25, color: "#8b5cf6" },
+    { name: "Negativo", value: 10, color: "#f59e0b" },
+  ],
+  demographics: [
+    { age: "18-24", count: 1200 },
+    { age: "25-34", count: 2800 },
+    { age: "35-44", count: 1900 },
+    { age: "45-54", count: 800 },
+    { age: "55+", count: 300 },
+  ],
+  peakHours: [
+    { hour: "08:00", activity: 45 },
+    { hour: "10:00", activity: 78 },
+    { hour: "12:00", activity: 92 },
+    { hour: "14:00", activity: 65 },
+    { hour: "16:00", activity: 88 },
+    { hour: "18:00", activity: 95 },
+    { hour: "20:00", activity: 72 },
+  ],
+  platformDominance: [
+    { platform: "Instagram", value: 85 },
+    { platform: "TikTok", value: 45 },
+    { platform: "Twitter", value: 30 },
+    { platform: "Facebook", value: 60 },
+    { platform: "LinkedIn", value: 20 },
+  ],
+  priceSensitivity: "Med",
+  saturationIndex: 68,
+  viralPotential: 7.2,
+  aiConclusion: `Análisis Estratégico: El mercado de cafeterías en Madrid muestra una viabilidad del 78%, indicando una oportunidad sólida pero competitiva. La densidad de competencia es media, con espacio para diferenciación. Las tendencias de búsqueda muestran un crecimiento constante del 15% mensual, sugiriendo demanda creciente.
+
+El sentimiento general es predominantemente positivo (65%), lo que indica buena percepción del concepto. La demografía objetivo (25-34 años) representa el 40% del mercado, alineándose con el perfil de consumidores de café premium.
+
+Las horas pico (12:00 y 18:00) coinciden con pausas laborales, sugiriendo un modelo de negocio orientado a profesionales. Instagram domina con 85% de presencia, siendo la plataforma clave para marketing.
+
+El índice de saturación del 68% indica que el mercado está moderadamente saturado, pero aún hay espacio para conceptos innovadores. El potencial viral de 7.2/10 es prometedor, especialmente con contenido visual en Instagram.
+
+Recomendación: Posicionarse como "Third Place" premium con WiFi rápido, ambiente de trabajo y productos de especialidad. Enfoque en Instagram para marketing y horarios extendidos para capturar picos de demanda.`,
+};
+
+// Custom Tooltip for dark theme
+const CustomTooltip = ({ active, payload, label }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 shadow-xl">
+        <p className="text-slate-300 text-sm mb-1">{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <p key={index} className="text-sm" style={{ color: entry.color }}>
+            {entry.name}: {entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
 
 export default function DataPage() {
-  const router = useRouter();
-  const [logs, setLogs] = useState<SearchLog[]>([]);
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  useEffect(() => {
-    const fetchLogs = async () => {
-      try {
-        const token = Cookies.get("bai_token");
-        
-        if (!token) {
-          router.push("/login");
-          return;
-        }
+  const handleGenerateReport = () => {
+    setIsGenerating(true);
+    // Future: Open chat/modal for user interaction
+    setTimeout(() => setIsGenerating(false), 2000);
+  };
 
-        const response = await fetch(getDataLogsUrl(), {
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
-        });
+  const getViabilityColor = (score: number) => {
+    if (score >= 70) return "text-emerald-400";
+    if (score >= 50) return "text-amber-400";
+    return "text-rose-400";
+  };
 
-        if (response.status === 401) {
-          // Token is invalid or expired - remove it and redirect to login
-          Cookies.remove("bai_token");
-          router.push("/login");
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error("Failed to load logs");
-        }
-
-        const data = await response.json();
-        setLogs(data);
-      } catch (error) {
-        console.error("Error loading search logs:", error);
-      }
-    };
-
-    fetchLogs();
-  }, [router]);
+  const getSaturationColor = (index: number) => {
+    if (index >= 70) return "text-rose-400";
+    if (index >= 50) return "text-amber-400";
+    return "text-emerald-400";
+  };
 
   return (
-    <div className="w-full h-full space-y-6">
-        {/* Header - Dark theme style */}
-        <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-slate-800 to-slate-900">
-            <DatabaseZap className="h-6 w-6 text-green-400" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-white">Intelligence & Data Mining</h1>
-            <p className="text-sm text-slate-400">Market intelligence and predictive analysis</p>
-          </div>
-        </div>
-
-        {/* Section 1: Latest Reports - Static placeholder cards (dark slate cards) */}
-          <div className="rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-green-400">Latest Reports</h2>
-            <div className="space-y-3">
-              <div className="rounded border border-slate-700 bg-slate-800 p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="font-mono text-sm font-medium text-green-400">
-                    market_analysis_2024.json
-                  </h3>
-                  <span className="rounded bg-green-900/30 px-2 py-1 text-xs font-mono text-green-400">
-                    COMPLETE
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400">
-                  Generated: 2024-01-15 14:32:18 | Sources: 47 | Status: Ready
-                </p>
-              </div>
-              <div className="rounded border border-slate-700 bg-slate-800 p-4">
-                <div className="mb-2 flex items-center justify-between">
-                  <h3 className="font-mono text-sm font-medium text-green-400">
-                    competitor_intel_q1.json
-                  </h3>
-                  <span className="rounded bg-yellow-900/30 px-2 py-1 text-xs font-mono text-yellow-400">
-                    PROCESSING
-                  </span>
-                </div>
-                <p className="text-xs text-slate-400">
-                  Generated: 2024-01-15 14:28:45 | Sources: 23 | Status: Analyzing...
-                </p>
-              </div>
-            <div className="rounded border border-slate-700 bg-slate-800 p-4">
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="font-mono text-sm font-medium text-green-400">
-                  industry_trends_report.json
-                </h3>
-                <span className="rounded bg-green-900/30 px-2 py-1 text-xs font-mono text-green-400">
-                  COMPLETE
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">
-                Generated: 2024-01-15 14:15:33 | Sources: 62 | Status: Ready
+    <PageContainer className="w-full space-y-6">
+      {/* Header Section */}
+      <PageItem>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500/20 to-emerald-500/20 border border-violet-500/30">
+              <DatabaseZap className="h-6 w-6 text-violet-400" />
+            </div>
+            <div>
+              <h1 className="text-4xl font-extrabold bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-400 bg-clip-text text-transparent">
+                Inteligencia de Mercado
+              </h1>
+              <p className="text-sm text-slate-400 mt-1">
+                Análisis en tiempo real de tendencias y patrones de consumo
               </p>
             </div>
+          </div>
+          <Button
+            variant="primary"
+            size="lg"
+            onClick={handleGenerateReport}
+            disabled={isGenerating}
+            className="flex items-center gap-2"
+          >
+            <Sparkles className="h-4 w-4" />
+            {isGenerating ? "Generando..." : "Generar Nuevo Informe"}
+          </Button>
+        </div>
+      </PageItem>
+
+      {/* Executive Summary Row */}
+      <PageContainer className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Card 1: Market Viability */}
+        <PageItem>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5 text-emerald-400" />
+                <span className="text-sm text-slate-400">Market Viability</span>
+              </div>
+            </div>
+            <div className="flex items-end gap-3">
+              <span className={cn("text-5xl font-bold", getViabilityColor(mockData.marketViability))}>
+                {mockData.marketViability}
+              </span>
+              <span className="text-2xl text-slate-500 mb-2">/100</span>
+            </div>
+            <div className="mt-4 h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div
+                className={cn(
+                  "h-full transition-all duration-500",
+                  mockData.marketViability >= 70
+                    ? "bg-emerald-500"
+                    : mockData.marketViability >= 50
+                    ? "bg-amber-500"
+                    : "bg-rose-500"
+                )}
+                style={{ width: `${mockData.marketViability}%` }}
+              />
             </div>
           </div>
+        </PageItem>
 
-        {/* Section 2: Live Feed - Map through logs state, display like terminal log */}
-          <div className="rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold text-green-400">Live Search Feed</h2>
-          {logs.length === 0 ? (
-              <div className="rounded border border-slate-700 bg-slate-800 p-3">
-              <div className="flex items-center gap-2 font-mono text-sm text-slate-400">
-                  <span className="text-yellow-400">[INFO]</span>
-                  <span>No active intelligence operations yet.</span>
-                </div>
+        {/* Card 2: Viral Potential */}
+        <PageItem>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Star className="h-5 w-5 text-amber-400" />
+                <span className="text-sm text-slate-400">Viral Potential</span>
               </div>
-            ) : (
-              <div className="space-y-2 font-mono text-sm">
-                {logs.map((log) => (
-                  <div key={log.id} className="rounded border border-slate-700 bg-slate-800 p-3">
-                    <div className="flex items-center gap-2 text-slate-400">
-                      <span className={log.status === "completed" ? "text-green-400" : "text-red-400"}>
-                        [INFO]
-                      </span>
-                      <span>
-                        Query: "{log.query}" | Time: {new Date(log.timestamp).toLocaleTimeString()}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            </div>
+            <div className="flex items-end gap-3">
+              <span className="text-5xl font-bold text-amber-400">
+                {mockData.viralPotential}
+              </span>
+              <span className="text-2xl text-slate-500 mb-2">/10</span>
+            </div>
+            <div className="mt-4 flex gap-1">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "flex-1 h-2 rounded-full",
+                    i < Math.round(mockData.viralPotential)
+                      ? "bg-amber-500"
+                      : "bg-slate-800"
+                  )}
+                />
+              ))}
+            </div>
           </div>
+        </PageItem>
 
-        {/* Footer: Fake terminal input line */}
-          <div className="rounded-lg border border-slate-800 bg-slate-900 p-6 shadow-lg">
-          <div className="flex items-center gap-2">
-              <span className="font-mono text-xs text-green-400">$</span>
-              <span className="font-mono text-sm text-slate-300">bai-data-mining --status</span>
+        {/* Card 3: Saturation Index */}
+        <PageItem>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-amber-400" />
+                <span className="text-sm text-slate-400">Saturation Index</span>
+              </div>
+            </div>
+            <div className="flex items-end gap-3">
+              <span className={cn("text-5xl font-bold", getSaturationColor(mockData.saturationIndex))}>
+                {mockData.saturationIndex}%
+              </span>
+            </div>
+            <div className="mt-4 text-xs text-slate-500">
+              {mockData.saturationIndex >= 70
+                ? "Alta saturación - Diferenciación crítica"
+                : mockData.saturationIndex >= 50
+                ? "Saturación media - Oportunidad moderada"
+                : "Baja saturación - Mercado abierto"}
+            </div>
+          </div>
+        </PageItem>
+      </PageContainer>
+
+      {/* Deep Dive Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Chart: Search Trends (Wide) */}
+        <PageItem className="lg:col-span-2">
+          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
+            <h3 className="text-lg font-semibold text-white mb-4">Search Trends</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={mockData.searchTrends}>
+                <defs>
+                  <linearGradient id="colorSearches" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <XAxis
+                  dataKey="month"
+                  stroke="#64748b"
+                  style={{ fontSize: "12px" }}
+                />
+                <YAxis stroke="#64748b" style={{ fontSize: "12px" }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Area
+                  type="monotone"
+                  dataKey="searches"
+                  stroke="#8b5cf6"
+                  strokeWidth={2}
+                  fill="url(#colorSearches)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </PageItem>
+
+        {/* Side Chart: Sentiment Analysis */}
+        <PageItem>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
+            <h3 className="text-lg font-semibold text-white mb-4">Sentiment Analysis</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={mockData.sentimentAnalysis}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {mockData.sentimentAnalysis.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+        </PageItem>
+      </div>
+
+      {/* Second Row: Platform Dominance & Demographics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Platform Dominance Radar */}
+        <PageItem>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
+            <h3 className="text-lg font-semibold text-white mb-4">Platform Dominance</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <RadarChart data={mockData.platformDominance}>
+                <PolarGrid stroke="#334155" />
+                <PolarAngleAxis
+                  dataKey="platform"
+                  stroke="#94a3b8"
+                  style={{ fontSize: "12px" }}
+                />
+                <PolarRadiusAxis angle={90} domain={[0, 100]} stroke="#334155" />
+                <Radar
+                  name="Presence"
+                  dataKey="value"
+                  stroke="#8b5cf6"
+                  fill="#8b5cf6"
+                  fillOpacity={0.3}
+                  strokeWidth={2}
+                />
+                <Tooltip content={<CustomTooltip />} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </div>
+        </PageItem>
+
+        {/* Demographics Bar Chart */}
+        <PageItem>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
+            <h3 className="text-lg font-semibold text-white mb-4">Demographics</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={mockData.demographics}>
+                <XAxis
+                  dataKey="age"
+                  stroke="#64748b"
+                  style={{ fontSize: "12px" }}
+                />
+                <YAxis stroke="#64748b" style={{ fontSize: "12px" }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="count" fill="#10b981" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </PageItem>
+      </div>
+
+      {/* Third Row: Peak Hours & Additional Metrics */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Peak Hours */}
+        <PageItem>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
+            <h3 className="text-lg font-semibold text-white mb-4">Peak Hours Activity</h3>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart data={mockData.peakHours} layout="vertical">
+                <XAxis type="number" stroke="#64748b" style={{ fontSize: "12px" }} />
+                <YAxis
+                  dataKey="hour"
+                  type="category"
+                  stroke="#64748b"
+                  style={{ fontSize: "12px" }}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="activity" fill="#f59e0b" radius={[0, 8, 8, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </PageItem>
+
+        {/* Additional Metrics */}
+        <PageItem>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/50 p-6 backdrop-blur">
+            <h3 className="text-lg font-semibold text-white mb-4">Additional Metrics</h3>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                <span className="text-sm text-slate-400">Competition Density</span>
+                <span className="text-lg font-semibold text-amber-400">
+                  {mockData.competitionDensity}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 border border-slate-700">
+                <span className="text-sm text-slate-400">Price Sensitivity</span>
+                <span className="text-lg font-semibold text-violet-400">
+                  {mockData.priceSensitivity}
+                </span>
+              </div>
+            </div>
+          </div>
+        </PageItem>
+      </div>
+
+      {/* Strategic Insights - AI Conclusion */}
+      <PageItem>
+        <div className="rounded-xl border border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-6 shadow-lg backdrop-blur">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="h-5 w-5 text-violet-400" />
+            <h3 className="text-lg font-semibold text-white">Strategic Insights</h3>
+          </div>
+          <div className="rounded-lg border border-slate-800 bg-slate-900/80 p-6">
+            <div className="font-mono text-sm text-slate-300 leading-relaxed whitespace-pre-line">
+              {mockData.aiConclusion}
+            </div>
           </div>
         </div>
-      </div>
+      </PageItem>
+    </PageContainer>
   );
 }
