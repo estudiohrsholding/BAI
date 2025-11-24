@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Bot, Code, DatabaseZap, ArrowRight, CheckCircle, Menu, X } from "lucide-react";
 import { PricingSection } from "@/components/sections/PricingSection";
+import { BaiLogo } from "@/components/ui/BaiLogo";
 
 export default function MarketingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -15,8 +16,8 @@ export default function MarketingPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <Link href="/" className="text-2xl font-bold text-white">
-              B.A.I.
+            <Link href="/">
+              <BaiLogo className="text-2xl" />
             </Link>
 
             {/* Right Side - Desktop */}

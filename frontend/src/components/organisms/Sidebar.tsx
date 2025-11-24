@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SystemStatus } from "@/components/molecules/SystemStatus";
+import { BaiLogo } from "@/components/ui/BaiLogo";
 
 interface NavItem {
   label: string;
@@ -71,8 +72,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex h-full flex-col">
           {/* Header with Close Button (Mobile only) */}
           <div className="flex h-16 items-center justify-between border-b border-slate-800 px-6">
-            <h1 className="text-xl font-bold tracking-tighter text-violet-400">
-              B.A.I.
+            <h1>
+              <BaiLogo className="text-xl" />
             </h1>
             <button
               onClick={onClose}
