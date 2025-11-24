@@ -23,6 +23,7 @@ import {
   NotificationSimulation,
 } from "@/components/molecules/AutomationVisuals";
 import { cn } from "@/lib/utils";
+import { PageContainer, PageItem } from "@/components/ui/PageAnimation";
 
 interface User {
   id: number;
@@ -102,8 +103,9 @@ export default function AutomationPage() {
   };
 
   return (
-    <div className="w-full space-y-8">
-        {/* Hero Header */}
+    <PageContainer className="w-full space-y-8">
+      {/* Hero Header */}
+      <PageItem>
         <div>
           <h1 className="text-4xl font-bold text-white">
             Centro de Automatización
@@ -111,191 +113,210 @@ export default function AutomationPage() {
           <p className="mt-2 text-lg text-slate-400">
             Tus agentes digitales están trabajando 24/7.
           </p>
-
-          {/* Stats Row */}
-          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
-            <div className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-4 shadow-lg">
-          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-violet-500/10 border border-violet-500/20">
-                <Clock className="h-6 w-6 text-violet-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-white">
-                  12.5 Horas
-                </p>
-                <p className="text-sm text-slate-400">ahorradas este mes</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-4 shadow-lg">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                <Users className="h-6 w-6 text-emerald-400" />
-          </div>
-          <div>
-                <p className="text-2xl font-bold text-white">142</p>
-                <p className="text-sm text-slate-400">Clientes atendidos</p>
-              </div>
-            </div>
-          </div>
         </div>
+      </PageItem>
 
-        {/* Active Agents Grid */}
-          <div>
-          <h2 className="mb-6 text-2xl font-semibold text-white">
-            Agentes Activos
-          </h2>
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* Card 1: Recepcionista Web */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-6 shadow-lg transition-all duration-300 hover:border-emerald-500/50 hover:-translate-y-1">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">
-                  Recepcionista Web
-                </h3>
-                <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 text-xs font-medium text-emerald-400">
-                    Active
-                  </span>
-                </div>
-
-              {/* Visual Component */}
-              <div className="mb-4 flex justify-center">
-                <ChatSimulation />
-              </div>
-
-              <p className="text-sm text-slate-400">
-                Atiende preguntas frecuentes en tu web al instante.
-              </p>
+      {/* Stats Row */}
+      <PageContainer className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-2">
+        <PageItem>
+          <div className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-4 shadow-lg">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-violet-500/10 border border-violet-500/20">
+              <Clock className="h-6 w-6 text-violet-400" />
             </div>
-
-            {/* Card 2: Gestión de Reputación */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-6 shadow-lg transition-all duration-300 hover:border-emerald-500/50 hover:-translate-y-1">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">
-                  Gestión de Reputación
-                </h3>
-                <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 text-xs font-medium text-emerald-400">
-                    Active
-                  </span>
-                </div>
-
-              {/* Visual Component */}
-              <div className="mb-4 flex justify-center">
-                <ReviewSimulation />
-              </div>
-
-              <p className="text-sm text-slate-400">
-                Responde y agradece reseñas de 5 estrellas en Google.
+            <div>
+              <p className="text-2xl font-bold text-white">
+                12.5 Horas
               </p>
-            </div>
-
-            {/* Card 3: Radar de Leads */}
-            <div className="rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-6 shadow-lg transition-all duration-300 hover:border-emerald-500/50 hover:-translate-y-1">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-white">
-                  Radar de Leads
-                </h3>
-                <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 text-xs font-medium text-emerald-400">
-                  Active
-                  </span>
-                </div>
-
-              {/* Visual Component */}
-              <div className="mb-4 flex justify-center">
-                <NotificationSimulation />
-              </div>
-
-              <p className="text-sm text-slate-400">
-                Te avisa al móvil cuando entra un cliente importante.
-              </p>
+              <p className="text-sm text-slate-400">ahorradas este mes</p>
             </div>
           </div>
+        </PageItem>
+
+        <PageItem>
+          <div className="flex items-center gap-4 rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-4 shadow-lg">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+              <Users className="h-6 w-6 text-emerald-400" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-white">142</p>
+              <p className="text-sm text-slate-400">Clientes atendidos</p>
+            </div>
+          </div>
+        </PageItem>
+      </PageContainer>
+
+      {/* Active Agents Grid */}
+      <PageItem>
+        <h2 className="mb-6 text-2xl font-semibold text-white">
+          Agentes Activos
+        </h2>
+      </PageItem>
+
+      <PageContainer className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Card 1: Recepcionista Web */}
+        <PageItem>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-6 shadow-lg transition-all duration-300 hover:border-emerald-500/50 hover:-translate-y-1">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">
+                Recepcionista Web
+              </h3>
+              <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 text-xs font-medium text-emerald-400">
+                Active
+              </span>
             </div>
 
-        {/* Tools Integration */}
-                <div>
-          <h2 className="mb-4 text-2xl font-semibold text-white">
-            Herramientas Conectadas (Plan Basic)
-          </h2>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            {CONNECTED_TOOLS.map((tool) => {
-              const Icon = tool.icon;
-              const content = (
-                <div
-                  className={cn(
-                    "flex flex-col items-center gap-3 rounded-xl border p-4 transition-all",
-                    tool.connected
-                      ? "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/50"
-                      : "border-slate-800 bg-slate-900/50"
-                  )}
-                >
+            {/* Visual Component */}
+            <div className="mb-4 flex justify-center">
+              <ChatSimulation />
+            </div>
+
+            <p className="text-sm text-slate-400">
+              Atiende preguntas frecuentes en tu web al instante.
+            </p>
+          </div>
+        </PageItem>
+
+        {/* Card 2: Gestión de Reputación */}
+        <PageItem>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-6 shadow-lg transition-all duration-300 hover:border-emerald-500/50 hover:-translate-y-1">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">
+                Gestión de Reputación
+              </h3>
+              <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 text-xs font-medium text-emerald-400">
+                Active
+              </span>
+            </div>
+
+            {/* Visual Component */}
+            <div className="mb-4 flex justify-center">
+              <ReviewSimulation />
+            </div>
+
+            <p className="text-sm text-slate-400">
+              Responde y agradece reseñas de 5 estrellas en Google.
+            </p>
+          </div>
+        </PageItem>
+
+        {/* Card 3: Radar de Leads */}
+        <PageItem>
+          <div className="rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-6 shadow-lg transition-all duration-300 hover:border-emerald-500/50 hover:-translate-y-1">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-white">
+                Radar de Leads
+              </h3>
+              <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 text-xs font-medium text-emerald-400">
+                Active
+              </span>
+            </div>
+
+            {/* Visual Component */}
+            <div className="mb-4 flex justify-center">
+              <NotificationSimulation />
+            </div>
+
+            <p className="text-sm text-slate-400">
+              Te avisa al móvil cuando entra un cliente importante.
+            </p>
+          </div>
+        </PageItem>
+      </PageContainer>
+
+      {/* Tools Integration */}
+      <PageItem>
+        <h2 className="mb-4 text-2xl font-semibold text-white">
+          Herramientas Conectadas (Plan Basic)
+        </h2>
+      </PageItem>
+
+      <PageContainer className="grid grid-cols-2 gap-4 md:grid-cols-4">
+              {CONNECTED_TOOLS.map((tool) => {
+                const Icon = tool.icon;
+                const toolContent = (
                   <div
                     className={cn(
-                      "flex h-12 w-12 items-center justify-center rounded-lg border",
-                      tool.connected ? "bg-emerald-500/20 border-emerald-500/30" : "bg-slate-800 border-slate-700"
+                      "flex flex-col items-center gap-3 rounded-xl border p-4 transition-all",
+                      tool.connected
+                        ? "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/50"
+                        : "border-slate-800 bg-slate-900/50"
                     )}
                   >
-                    <Icon
+                    <div
                       className={cn(
-                        "h-6 w-6",
-                        tool.connected ? "text-emerald-400" : "text-slate-500"
-                      )}
-                    />
-                  </div>
-                  <div className="text-center">
-                    <p
-                      className={cn(
-                        "text-sm font-medium",
-                        tool.connected ? "text-white" : "text-slate-500"
+                        "flex h-12 w-12 items-center justify-center rounded-lg border",
+                        tool.connected ? "bg-emerald-500/20 border-emerald-500/30" : "bg-slate-800 border-slate-700"
                       )}
                     >
-                      {tool.name}
-                    </p>
-                    {tool.connected && (
-                      <span className="mt-1 inline-block rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 text-xs text-emerald-400">
-                        Conectado
-                      </span>
-                    )}
+                      <Icon
+                        className={cn(
+                          "h-6 w-6",
+                          tool.connected ? "text-emerald-400" : "text-slate-500"
+                        )}
+                      />
+                    </div>
+                    <div className="text-center">
+                      <p
+                        className={cn(
+                          "text-sm font-medium",
+                          tool.connected ? "text-white" : "text-slate-500"
+                        )}
+                      >
+                        {tool.name}
+                      </p>
+                      {tool.connected && (
+                        <span className="mt-1 inline-block rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 text-xs text-emerald-400">
+                          Conectado
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-
-              if (tool.link) {
-                return (
-                  <Link
-                    key={tool.name}
-                    href={tool.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block"
-                  >
-                    {content}
-                </Link>
                 );
-              }
 
-              return <div key={tool.name}>{content}</div>;
-            })}
-              </div>
-            </div>
+                if (tool.link) {
+                  return (
+                    <PageItem key={tool.name}>
+                      <Link
+                        href={tool.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block"
+                      >
+                        {toolContent}
+                      </Link>
+                    </PageItem>
+                  );
+                }
 
-        {/* Request Section */}
-            <div className="rounded-xl border border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-6 shadow-lg backdrop-blur">
+                return (
+                  <PageItem key={tool.name}>
+                    {toolContent}
+                  </PageItem>
+                );
+              })}
+      </PageContainer>
+
+      {/* Request Section */}
+      <PageItem>
+        <div className="rounded-xl border border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-6 shadow-lg backdrop-blur">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                <div className="flex-1">
+            <div className="flex-1">
               <h3 className="mb-2 text-xl font-semibold text-white">
                 ¿Necesitas automatizar algo más?
               </h3>
               <p className="text-sm text-slate-400">
                 Habla con B.A.I. para crear nuevas automatizaciones personalizadas.
-                  </p>
+              </p>
             </div>
 
             <div className="flex flex-col gap-3 sm:flex-row">
-                  <Button
-                    variant="primary"
-                    size="lg"
-                    onClick={handleAskBAI}
-                    className="flex items-center gap-2"
-                  >
-                    <MessageCircle className="h-4 w-4" />
+              <Button
+                variant="primary"
+                size="lg"
+                onClick={handleAskBAI}
+                className="flex items-center gap-2"
+              >
+                <MessageCircle className="h-4 w-4" />
                 <span>Hablar con B.A.I.</span>
               </Button>
 
@@ -319,6 +340,7 @@ export default function AutomationPage() {
             </div>
           </div>
         </div>
-      </div>
+      </PageItem>
+    </PageContainer>
   );
 }
