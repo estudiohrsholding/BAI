@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Bot, Code, DatabaseZap, ArrowRight, CheckCircle, Menu, X } from "lucide-react";
+import { PricingSection } from "@/components/sections/PricingSection";
 
 export default function MarketingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -128,61 +129,8 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      {/* Value Proposition - The Trinity */}
-      <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900/50">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-4">El Ecosistema B.A.I.</h2>
-            <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-              Tres servicios potentes integrados en una plataforma inteligente
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Automation Card */}
-            <div className="group relative rounded-2xl border border-slate-800 bg-slate-900/50 p-8 hover:border-blue-500/50 transition-all hover:shadow-xl hover:shadow-blue-500/10">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 mb-6">
-                  <Bot className="h-7 w-7 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-3">Automatización</h3>
-                <p className="text-slate-400 leading-relaxed">
-                  Workflows n8n que trabajan mientras duermes. Automatiza procesos repetitivos y libera tu tiempo.
-                </p>
-              </div>
-            </div>
-
-            {/* Software Card */}
-            <div className="group relative rounded-2xl border border-slate-800 bg-slate-900/50 p-8 hover:border-purple-500/50 transition-all hover:shadow-xl hover:shadow-purple-500/10">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 mb-6">
-                  <Code className="h-7 w-7 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-3">Software Studio</h3>
-                <p className="text-slate-400 leading-relaxed">
-                  Apps a medida desplegadas en tiempo récord. Desarrollo rápido y escalable con las últimas tecnologías.
-                </p>
-              </div>
-            </div>
-
-            {/* Data Mining Card */}
-            <div className="group relative rounded-2xl border border-slate-800 bg-slate-900/50 p-8 hover:border-green-500/50 transition-all hover:shadow-xl hover:shadow-green-500/10">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-green-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-green-600 mb-6">
-                  <DatabaseZap className="h-7 w-7 text-white" />
-                </div>
-                <h3 className="text-2xl font-bold mb-3">Data Mining</h3>
-                <p className="text-slate-400 leading-relaxed">
-                  Inteligencia de mercado en tiempo real con Gemini 2.5. Descubre insights que transforman tu negocio.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* Pricing Section */}
+      <PricingSection />
 
       {/* Social Proof */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 border-y border-slate-800">
