@@ -1,8 +1,10 @@
+"use client";
+
 import { DatabaseZap } from "lucide-react";
 
 export default function DataMiningPage() {
   return (
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-br from-slate-800 to-slate-900">
@@ -88,7 +90,6 @@ export default function DataMiningPage() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }

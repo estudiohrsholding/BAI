@@ -7,6 +7,7 @@ import Cookies from "js-cookie";
 import { Workflow, AppWindow, DatabaseZap, Lock, CheckCircle2, Code2, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getMeUrl } from "@/lib/api";
+import { PageContainer, PageItem } from "@/components/ui/PageAnimation";
 
 interface User {
   id: number;
@@ -108,39 +109,43 @@ export default function DashboardPage() {
   const planDisplayDark = getPlanTierDisplayDark(planTier);
 
   return (
-    <div className="w-full space-y-8">
+    <PageContainer className="w-full space-y-8">
       {/* Command Center Header with Cyberpunk Style */}
-      <div className="relative border-b border-slate-800 pb-6">
-        {/* Subtle gradient background effect */}
-        <div className="absolute inset-0 -z-10 bg-gradient-to-r from-violet-500/5 via-transparent to-emerald-500/5 opacity-50" />
-        
-        <div className="flex items-center justify-between relative">
-          <div>
-            <h1 className="text-4xl font-extrabold bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-400 bg-clip-text text-transparent">
-              Panel de Control
-            </h1>
-            <p className="mt-2 text-base text-slate-400">
-              {greeting}, <span className="text-violet-400 font-medium">{userName}</span>. Systems are optimal.
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            <span
-              className={cn(
-                "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-wide shadow-lg",
-                planDisplayDark.color
-              )}
-            >
-              {isEnterprise && <Crown className="h-3 w-3" />}
-              {planDisplayDark.label}
-            </span>
+      <PageItem>
+        <div className="relative border-b border-slate-800 pb-6">
+          {/* Subtle gradient background effect */}
+          <div className="absolute inset-0 -z-10 bg-gradient-to-r from-violet-500/5 via-transparent to-emerald-500/5 opacity-50" />
+          
+          <div className="flex items-center justify-between relative">
+            <div>
+              <h1 className="text-4xl font-extrabold bg-gradient-to-r from-violet-400 via-fuchsia-400 to-violet-400 bg-clip-text text-transparent">
+                Panel de Control
+              </h1>
+              <p className="mt-2 text-base text-slate-400">
+                {greeting}, <span className="text-violet-400 font-medium">{userName}</span>. Systems are optimal.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold uppercase tracking-wide shadow-lg",
+                  planDisplayDark.color
+                )}
+              >
+                {isEnterprise && <Crown className="h-3 w-3" />}
+                {planDisplayDark.label}
+              </span>
+            </div>
           </div>
         </div>
-      </div>
+      </PageItem>
 
       {/* Services Grid - Cyberpunk Command Center Style */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Service 1: Automation */}
-        <Link
+      <PageItem>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {/* Service 1: Automation */}
+          <PageItem>
+            <Link
           href="/automation"
           className={cn(
             "group relative overflow-hidden rounded-xl",
@@ -167,9 +172,11 @@ export default function DashboardPage() {
             </p>
           </div>
         </Link>
+          </PageItem>
 
-        {/* Service 2: Software */}
-        <Link
+          {/* Service 2: Software */}
+          <PageItem>
+            <Link
           href="/software"
           className={cn(
             "group relative overflow-hidden rounded-xl",
@@ -204,9 +211,11 @@ export default function DashboardPage() {
             </p>
           </div>
         </Link>
+          </PageItem>
 
-        {/* Service 3: Data Mining */}
-        <Link
+          {/* Service 3: Data Mining */}
+          <PageItem>
+            <Link
           href="/data"
           className={cn(
             "group relative overflow-hidden rounded-xl",
@@ -244,10 +253,13 @@ export default function DashboardPage() {
             </p>
           </div>
         </Link>
-      </div>
+          </PageItem>
+        </div>
+      </PageItem>
 
       {/* Subscription Status Widget */}
-      <div
+      <PageItem>
+        <div
         className={cn(
           "rounded-xl border p-6 backdrop-blur",
           isEnterprise
@@ -292,7 +304,8 @@ export default function DashboardPage() {
           )}
         </div>
       </div>
-    </div>
+      </PageItem>
+    </PageContainer>
   );
 }
 
