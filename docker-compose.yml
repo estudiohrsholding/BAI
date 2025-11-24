@@ -62,6 +62,14 @@ services:
       - N8N_SECURE_COOKIE=false
       - WEBHOOK_URL=http://localhost:5678/
       - GENERIC_TIMEZONE=Europe/Madrid # Opcional: Para que los logs salgan con tu hora
+      # --- CONTEXTO DE RED (REQUERIDO PARA AUTO-SETUP) ---
+      - N8N_HOST=localhost
+      - VUE_APP_URL_BASE_API=http://localhost:5678/
+      # --- VARIABLES PARA SALTAR EL SETUP INICIAL ---
+      - N8N_USER_FIRST_NAME=BAI
+      - N8N_USER_LAST_NAME=Admin
+      - N8N_USER_EMAIL=admin@bai.com
+      - N8N_USER_PASSWORD=AdminPassword2025!
     volumes:
       - n8n_data:/home/node/.n8n
     ports:

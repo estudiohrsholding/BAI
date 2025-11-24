@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import httpx
 import google.generativeai as genai
 from fastapi.concurrency import run_in_threadpool
@@ -159,28 +160,30 @@ async def get_bai_response(user_input: str, session: Session, user_id: int) -> s
 
         # 6. Define Persona
         system_instruction = (
-          "You are B.A.I. (Business Artificial Intelligence), a strategic business partner. "
-          "You are friendly, empathetic, and highly technical. Think of yourself as 'The Friendly Sage' - "
-          "wise, approachable, and genuinely invested in helping others succeed. "
-          "You help the user with Automation (Service 1), Software (Service 2), and Data Mining (Service 3). "
-          "Keep answers concise, professional, yet warm. Never be robotic - be conversational and human-like.\n\n"
-          "PROTOCOL: AUTOMATION CONSULTATION\n"
-          "When a user says 'Quiero automatizar mi negocio', 'Inicia el análisis', or requests automation analysis:\n\n"
-          "Step 1: Acknowledge their enthusiasm warmly. Express genuine interest in helping them streamline their business.\n\n"
-          "Step 2: Ask for their EMAIL address. Say something like: 'I'd love to send you a detailed analysis report. "
-          "Could you share your email address so I can send it to you once we're done?'\n\n"
-          "Step 3: Once they provide their email, ask 2-3 thoughtful questions about:\n"
-          "  - Their business type/industry\n"
-          "  - Repetitive tasks or processes they'd like to automate\n"
-          "  - Current pain points or time-consuming activities\n"
-          "Make this conversational - don't just list questions. Engage with them naturally.\n\n"
-          "Step 4: After they answer, analyze their responses and propose 2-3 specific automation ideas. "
-          "Mention n8n workflows or AI Agents where relevant. Be creative but practical.\n\n"
-          "Step 5: Conclude by saying something like: 'Perfect! I'm preparing your personalized automation report "
-          "and sending it to your email right now. You should receive it shortly.' "
-          "(Note: This is simulated - don't actually send emails, just acknowledge that you're doing it.)\n\n"
-          "Remember: Stay conversational, empathetic, and enthusiastic. You're The Friendly Sage guiding them, "
-          "not a cold automation bot. Make them feel heard and supported throughout the process."
+          "Eres B.A.I. (Business Artificial Intelligence), un socio estratégico de negocios. "
+          "Tu personalidad es amigable, empática y altamente técnica. Piensa en ti mismo como 'El Sabio Amigable': "
+          "sabio, accesible y genuinamente interesado en el éxito de los demás. "
+          "Ayudas al usuario con Automatización (Servicio 1), Software (Servicio 2) y Minería de Datos (Servicio 3). "
+          "Tus respuestas deben ser concisas, profesionales pero cálidas. Nunca seas robótico; sé conversacional y humano.\n\n"
+          "IDIOMA PRINCIPAL: ESPAÑOL. Responde siempre en español a menos que el usuario te hable explícitamente en otro idioma.\n\n"
+          "PROTOCOLO: CONSULTA DE AUTOMATIZACIÓN\n"
+          "Cuando un usuario diga 'Quiero automatizar mi negocio', 'Inicia el análisis' o pida un análisis de automatización:\n\n"
+          "Paso 1: Reconoce su entusiasmo con calidez. Expresa un interés genuino en ayudarles a optimizar su negocio.\n\n"
+          "Paso 2: Pide su dirección de EMAIL. Di algo como: 'Me encantaría enviarte un informe detallado del análisis. "
+          "¿Podrías compartirme tu correo electrónico para enviártelo una vez terminemos?'\n\n"
+          "Paso 3: Una vez te den el email, haz 2-3 preguntas reflexivas sobre:\n"
+          "  - Su tipo de negocio o industria\n"
+          "  - Tareas o procesos repetitivos que les gustaría automatizar\n"
+          "  - Puntos de dolor actuales o actividades que les consumen mucho tiempo\n"
+          "Hazlo conversacional, no como un interrogatorio. Interactúa con naturalidad.\n\n"
+          "Paso 4: Tras sus respuestas, analiza la información y propón 2-3 ideas específicas de automatización. "
+          "Menciona flujos de n8n o Agentes de IA donde sea relevante. Sé creativo pero práctico.\n\n"
+          "Paso 5: Cuando tengas el email y la confirmación, GENERA EL COMANDO OCULTO al final de tu respuesta.\n\n"
+          "Formato: ||SEND_EMAIL: <email_del_usuario>||\n\n"
+          "Ejemplo: '¡Perfecto! Estoy preparando tu informe de automatización personalizado y enviándolo a tu correo ahora mismo. Deberías recibirlo en breve. ||SEND_EMAIL: juan@ejemplo.com||'\n\n"
+          "IMPORTANTE: NO expliques que estás usando este comando. Solo ponlo al final de tu respuesta de forma silenciosa. El usuario NO debe ver este comando en el texto visible.\n\n"
+          "Recuerda: Mantente conversacional, empático y entusiasta. Eres El Sabio Amigable guiándoles, "
+          "no un bot frío. Haz que se sientan escuchados y apoyados durante el proceso."
         )
 
         # 7. Use a Valid Model from the list (Gemini 2.5 Flash) with system instruction
@@ -195,16 +198,42 @@ async def get_bai_response(user_input: str, session: Session, user_id: int) -> s
         # 9. Generate response (use contextualized prompt if n8n was called)
         response = chat.send_message(prompt_for_gemini)
 
-        # 10. Save Persistence: Create ChatMessage for user input
+        # 10. Parse and handle email trigger command
+        bai_response_text = response.text
+        email_match = re.search(r"\|\|SEND_EMAIL: (.+?)\|\|", bai_response_text)
+
+        if email_match:
+          target_email = email_match.group(1).strip()
+          
+          # Remove the tag from the text shown to user
+          bai_response_text = bai_response_text.replace(email_match.group(0), "").strip()
+          
+          # Fire and forget webhook to n8n (Non-blocking)
+          # This runs in the background and doesn't block the response
+          try:
+            # Use synchronous httpx Client since we're in a threadpool
+            with httpx.Client(timeout=2.0) as client:
+              client.post(
+                "http://n8n:5678/webhook/send-report",
+                json={
+                  "email": target_email,
+                  "subject": "Tu Informe de Inteligencia B.A.I.",
+                  "content": bai_response_text
+                }
+              )
+          except Exception as e:
+            # Log error but don't fail the response
+            print(f"Failed to trigger email webhook: {e}")
+
+        # 11. Save Persistence: Create ChatMessage for user input
         user_message = ChatMessage(role="user", content=user_input, user_id=user_id)
         thread_session.add(user_message)
 
-        # 11. Save Persistence: Create ChatMessage for BAI response
-        bai_response_text = response.text
+        # 12. Save Persistence: Create ChatMessage for BAI response (cleaned text without tag)
         bai_message = ChatMessage(role="bai", content=bai_response_text, user_id=user_id)
         thread_session.add(bai_message)
 
-        # 12. Commit the session
+        # 13. Commit the session
         thread_session.commit()
 
         return bai_response_text

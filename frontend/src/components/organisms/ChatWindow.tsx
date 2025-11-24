@@ -7,6 +7,8 @@ import { X, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/atoms/Button";
 import { getChatApiUrl, getChatHistoryUrl } from "@/lib/api";
+import { useDashboard } from "@/context/DashboardContext";
+import { useChat } from "@/context/ChatContext";
 
 interface ChatWindowProps {
   isOpen: boolean;
@@ -21,11 +23,14 @@ interface Message {
 export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { loadScenario } = useDashboard();
+  const { initialMessage, clearInitialMessage } = useChat();
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const [hasAutoSent, setHasAutoSent] = useState(false);
+  const [hasTriggeredDashboard, setHasTriggeredDashboard] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isLoadingRef = useRef(false);
 
@@ -78,7 +83,7 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
           setMessages([
             {
               role: "bot",
-              text: "Hello! I am ready to work. Which service shall we focus on today?"
+              text: "¡Hola! Estoy operativo. ¿En qué servicio nos enfocamos hoy?"
             }
           ]);
         } else {
@@ -96,7 +101,7 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
         setMessages([
           {
             role: "bot",
-            text: "Hello! I am ready to work. Which service shall we focus on today?"
+            text: "¡Hola! Estoy operativo. ¿En qué servicio nos enfocamos hoy?"
           }
         ]);
       } finally {
@@ -108,6 +113,26 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
 
     loadHistory();
   }, [isOpen, router]);
+
+  // Handle initial message from context (e.g., from Data page)
+  useEffect(() => {
+    if (!isOpen || isLoadingHistory || !initialMessage) return;
+
+    // Add initial message as bot message
+    setMessages((prev) => [
+      ...prev,
+      {
+        role: "bot",
+        text: initialMessage,
+      },
+    ]);
+
+    // Clear the initial message so it doesn't repeat
+    clearInitialMessage();
+
+    // Scroll to bottom to show the new message
+    setTimeout(() => scrollToBottom(), 100);
+  }, [initialMessage, isOpen, isLoadingHistory, clearInitialMessage]);
 
   // Auto-send function for programmatic use (memoized with useCallback)
   // Using ref for isLoading to avoid recreating function on every state change
@@ -149,11 +174,33 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
       }
 
       const data = await response.json();
-      setMessages((prev) => [...prev, { role: "bot", text: data.response }]);
+      const botResponse = data.response;
+      setMessages((prev) => [...prev, { role: "bot", text: botResponse }]);
+      
+      // Check if bot says the "success phrase" to trigger dashboard update
+      if (!hasTriggeredDashboard) {
+        const successPhrases = [
+          "estoy preparando tu informe",
+          "enviándolo a tu correo",
+          "enviándolo a tu correo electrónico",
+          "preparando tu informe de automatización",
+          "informe personalizado"
+        ];
+        
+        const responseLower = botResponse.toLowerCase();
+        const containsSuccessPhrase = successPhrases.some(phrase => 
+          responseLower.includes(phrase)
+        );
+        
+        if (containsSuccessPhrase) {
+          loadScenario("hair_salon");
+          setHasTriggeredDashboard(true);
+        }
+      }
     } catch (error) {
       setMessages((prev) => [
         ...prev,
-        { role: "bot", text: "Sorry, I'm having trouble connecting. Please try again." }
+        { role: "bot", text: "Lo siento, estoy teniendo problemas para conectarme. Por favor, inténtalo de nuevo." }
       ]);
     } finally {
       isLoadingRef.current = false;
@@ -276,7 +323,7 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
               <span className="text-white text-xs font-bold">B</span>
             </div>
             <div className="flex-1 bg-gray-100 rounded-lg px-3 py-2">
-              <p className="text-sm text-gray-600 italic">Thinking...</p>
+              <p className="text-sm text-gray-600 italic">Pensando...</p>
             </div>
           </div>
         )}
@@ -292,7 +339,7 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder="Type your message..."
+            placeholder="Escribe un mensaje..."
             disabled={isLoading}
             className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
           />

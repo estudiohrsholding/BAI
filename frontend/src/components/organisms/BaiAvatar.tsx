@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Bot } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatWindow } from "./ChatWindow";
+import { useChat } from "@/context/ChatContext";
 
 /**
  * B.A.I. Avatar - El componente persistente que representa
@@ -13,24 +14,20 @@ import { ChatWindow } from "./ChatWindow";
  */
 export function BaiAvatar() {
   const searchParams = useSearchParams();
-  const [isChatOpen, setIsChatOpen] = useState(false);
-
-  const handleToggleChat = () => {
-    setIsChatOpen((prev) => !prev);
-  };
+  const { isOpen: isChatOpen, openChat, closeChat, toggleChat } = useChat();
 
   // Auto-open chat if automation_consult or software_consult action is present
   useEffect(() => {
     const action = searchParams.get("action");
     if ((action === "automation_consult" || action === "software_consult") && !isChatOpen) {
-      setIsChatOpen(true);
+      openChat();
     }
-  }, [searchParams, isChatOpen]);
+  }, [searchParams, isChatOpen, openChat]);
 
   return (
     <>
       <div
-        onClick={handleToggleChat}
+        onClick={toggleChat}
         className={cn(
           "fixed bottom-6 right-6 z-50",
           "flex h-16 w-16 items-center justify-center",
@@ -47,7 +44,7 @@ export function BaiAvatar() {
         <Bot className="h-8 w-8 text-white" aria-hidden="true" />
       </div>
 
-      <ChatWindow isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
+      <ChatWindow isOpen={isChatOpen} onClose={closeChat} />
     </>
   );
 }

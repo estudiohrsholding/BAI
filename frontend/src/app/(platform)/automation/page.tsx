@@ -24,6 +24,7 @@ import {
 } from "@/components/molecules/AutomationVisuals";
 import { cn } from "@/lib/utils";
 import { PageContainer, PageItem } from "@/components/ui/PageAnimation";
+import { useChat } from "@/context/ChatContext";
 
 interface User {
   id: number;
@@ -50,6 +51,7 @@ const CONNECTED_TOOLS: Tool[] = [
 
 export default function AutomationPage() {
   const router = useRouter();
+  const { openChat } = useChat();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -98,8 +100,8 @@ export default function AutomationPage() {
   }, [router]);
 
   const handleAskBAI = () => {
-    // Navigate to dashboard with automation consultation action
-    router.push("/dashboard?action=automation_consult");
+    // Open chat directly using context
+    openChat();
   };
 
   return (
