@@ -297,15 +297,22 @@
     #bai-widget-input {
       flex: 1;
       padding: 10px 14px;
-      border: 1px solid #e5e7eb;
+      border: 1px solid #cbd5e1 !important;
       border-radius: 24px;
       font-size: 14px;
       outline: none;
       transition: border-color 0.2s;
+      color: #1e293b !important;
+      background-color: #ffffff !important;
+    }
+    
+    #bai-widget-input::placeholder {
+      color: #94a3b8 !important;
+      opacity: 1;
     }
     
     #bai-widget-input:focus {
-      border-color: #667eea;
+      border-color: #667eea !important;
     }
     
     #bai-widget-send {
