@@ -22,11 +22,16 @@ class PromptManager:
         Busca el archivo en app/data/inventories/{client_id}.json
         y lo convierte a un string formateado legible para la IA.
         
+        Formato flexible: Soporta diferentes tipos de inventarios:
+        - Inmobiliarias: ref, titulo, zona, precio, habitaciones, detalles
+        - Software/Planes: ref, titulo, precio, detalles
+        - Cualquier otro formato con campos comunes
+        
         Manejo robusto de errores: Si el archivo no existe o falla,
         devuelve un mensaje genérico sin romper el servidor.
         
         Args:
-            client_id: ID del cliente (ej: 'inmo-test-001', 'inmo-cliente-002')
+            client_id: ID del cliente (ej: 'inmo-test-001', 'cannabiapp-web-001')
             
         Returns:
             String formateado con el inventario para el prompt.
@@ -45,29 +50,49 @@ class PromptManager:
             # Verificar si el archivo existe
             if not inventory_file.exists():
                 # Inventario no disponible - no rompe el servidor, solo informa
-                return "INVENTARIO: No disponible en este momento. Por favor, contacta con la inmobiliaria directamente."
+                return "INVENTARIO: No disponible en este momento."
             
             # Leer y parsear JSON
             with open(inventory_file, 'r', encoding='utf-8') as f:
-                properties = json.load(f)
+                items = json.load(f)
             
-            # Validar que hay propiedades
-            if not properties or not isinstance(properties, list) or len(properties) == 0:
-                return "INVENTARIO: No hay propiedades disponibles en este momento. Por favor, contacta con la inmobiliaria directamente."
+            # Validar que hay items
+            if not items or not isinstance(items, list) or len(items) == 0:
+                return "INVENTARIO: No hay items disponibles en este momento."
             
             # Formatear el inventario como texto legible para la IA
             inventory_lines = ["INVENTARIO DISPONIBLE (Solo ofrece esto):\n"]
             
-            for prop in properties:
-                ref = prop.get('ref', 'N/A')
-                titulo = prop.get('titulo', 'Sin título')
-                zona = prop.get('zona', 'Zona no especificada')
-                precio = prop.get('precio', 0)
-                habitaciones = prop.get('habitaciones', 0)
-                detalles = prop.get('detalles', '')
+            for item in items:
+                ref = item.get('ref', 'N/A')
+                titulo = item.get('titulo', 'Sin título')
+                precio = item.get('precio', 0)
+                detalles = item.get('detalles', '')
                 
-                # Formato: "- REF-001: Título. Zona. Precio: 95.000€. 1 Habitación(es). Detalles"
-                line = f"- {ref}: {titulo}. {zona}. Precio: {precio:,}€. {habitaciones} Habitación(es). {detalles}"
+                # Formato flexible según campos disponibles
+                # Para inmobiliarias: incluye zona y habitaciones
+                # Para software/planes: solo ref, titulo, precio, detalles
+                parts = [f"{ref}: {titulo}"]
+                
+                # Añadir zona si existe (inmobiliarias)
+                if 'zona' in item and item.get('zona'):
+                    parts.append(f"Zona: {item['zona']}")
+                
+                # Añadir precio si existe
+                if precio and precio > 0:
+                    parts.append(f"Precio: {precio:,}€")
+                elif precio == 0 and 'precio' in item:
+                    parts.append("Precio: Consultar")
+                
+                # Añadir habitaciones si existe (inmobiliarias)
+                if 'habitaciones' in item and item.get('habitaciones', 0) > 0:
+                    parts.append(f"{item['habitaciones']} Habitación(es)")
+                
+                # Añadir detalles si existen
+                if detalles:
+                    parts.append(detalles)
+                
+                line = "- " + ". ".join(parts)
                 inventory_lines.append(line)
             
             return "\n".join(inventory_lines)
@@ -75,15 +100,15 @@ class PromptManager:
         except json.JSONDecodeError as e:
             # Error al parsear JSON - log pero no rompe el servidor
             print(f"Warning: Error parsing inventory JSON for {client_id}: {str(e)}")
-            return "INVENTARIO: Error al leer datos. Por favor, contacta con la inmobiliaria directamente."
+            return "INVENTARIO: Error al leer datos."
         except IOError as e:
             # Error al leer archivo - log pero no rompe el servidor
             print(f"Warning: Error reading inventory file for {client_id}: {str(e)}")
-            return "INVENTARIO: Error al cargar archivo. Por favor, contacta con la inmobiliaria directamente."
+            return "INVENTARIO: Error al cargar archivo."
         except Exception as e:
             # Cualquier otro error - log pero no rompe el servidor
             print(f"Warning: Unexpected error loading inventory for {client_id}: {str(e)}")
-            return "INVENTARIO: Error inesperado. Por favor, contacta con la inmobiliaria directamente."
+            return "INVENTARIO: Error inesperado."
     
     # Base B.A.I. persona
     BAI_BASE_PROMPT = (
@@ -157,25 +182,57 @@ class PromptManager:
         )
     
     @classmethod
+    def _get_cannabiapp_prompt(cls, client_id: str) -> str:
+        """
+        Construye el prompt para el asistente de ventas de Cannabiapp.
+        Carga el inventario (planes y licencias) desde JSON dinámicamente.
+        
+        Args:
+            client_id: ID del cliente Cannabiapp (ej: 'cannabiapp-web-001')
+        """
+        # Cargar inventario dinámicamente desde archivo JSON usando el client_id
+        inventory_text = cls._load_inventory(client_id)
+        
+        return (
+            "Eres el Asistente de Ventas de 'Cannabiapp', el software líder para Clubes Sociales de Cannabis (CSC).\n"
+            "OBJETIVO: Resolver dudas técnicas y cerrar demos o ventas de licencias.\n\n"
+            f"{inventory_text}\n\n"
+            "COMPORTAMIENTO:\n"
+            "- Eres experto en legalidad de CSCs y gestión eficiente.\n"
+            "- Si preguntan precios, ofrece los planes del inventario.\n"
+            "- Tu objetivo final es conseguir el email del presidente del club para enviarle una demo.\n"
+            "- Idioma: Español. Tono: Profesional pero relajado.\n"
+            "- Sé conversacional y empático. Entiende las necesidades específicas de cada club.\n"
+            "- Si preguntan sobre funcionalidades, explica cómo Cannabiapp ayuda con: gestión de socios, control de acceso, dispensario (TPV), stock y contabilidad.\n"
+            "- Si preguntan sobre hardware, menciona que los lectores de huella y tarjetas NFC están disponibles bajo pedido.\n"
+            "- Cuando tengas el email del presidente, CIERRA LA VENTA. Di: 'Perfecto, te envío una demo personalizada a tu correo. ¡Gracias por confiar en Cannabiapp!'.\n"
+        )
+    
+    @classmethod
     def get_widget_prompt(cls, client_id: str) -> str:
         """
         Get system prompt for a specific widget client.
         
-        Lógica generalizada: Si client_id empieza con 'inmo-', usa el prompt inmobiliario
-        y carga su inventario correspondiente desde {client_id}.json.
+        Lógica generalizada Multi-Tenencia:
+        - Si client_id empieza con 'inmo-', usa el prompt inmobiliario
+        - Si client_id empieza con 'cannabiapp-', usa el prompt de ventas de Cannabiapp
+        - Carga el inventario correspondiente desde {client_id}.json dinámicamente
         
-        Esto permite dar de alta nuevos clientes inmobiliarios solo creando su JSON,
+        Esto permite dar de alta nuevos clientes solo creando su JSON,
         sin tocar código Python cada vez.
         
         Args:
-            client_id: The client identifier (e.g., 'inmo-test-001', 'inmo-cliente-real')
+            client_id: The client identifier (e.g., 'inmo-test-001', 'cannabiapp-web-001')
             
         Returns:
             System prompt for the widget, or generic B.A.I. prompt if not found
         """
-        # Lógica generalizada: Cualquier client_id que empiece con 'inmo-' usa prompt inmobiliario
+        # Lógica generalizada: Detectar tipo de cliente por prefijo
         if client_id and client_id.startswith("inmo-"):
             return cls._get_inmo_prompt(client_id)
+        
+        if client_id and client_id.startswith("cannabiapp-"):
+            return cls._get_cannabiapp_prompt(client_id)
         
         # Generic widget prompt para otros tipos de clientes
         return (

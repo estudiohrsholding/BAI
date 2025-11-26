@@ -1,0 +1,21 @@
+[
+  {
+    "ref": "PLAN-BASIC",
+    "titulo": "Licencia Básica",
+    "precio": 99,
+    "detalles": "Gestión de socios y control de acceso básico. Ideal para clubes pequeños."
+  },
+  {
+    "ref": "PLAN-PRO",
+    "titulo": "Licencia Profesional",
+    "precio": 199,
+    "detalles": "Incluye dispensario (TPV), control de stock y contabilidad automatizada."
+  },
+  {
+    "ref": "HARDWARE",
+    "titulo": "Kit de Acceso",
+    "precio": 0,
+    "detalles": "Lectores de huella y tarjetas NFC compatibles disponibles bajo pedido."
+  }
+]
+
