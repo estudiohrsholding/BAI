@@ -56,6 +56,9 @@ interface SoftwareCardProps {
 function SoftwareCard({ app }: SoftwareCardProps) {
   const Icon = app.icon;
   const isLegendary = app.isLegendary || false;
+  
+  // Detectar si la URL es externa (termina en .html o empieza por http)
+  const isExternal = app.demoUrl.includes('.html') || app.demoUrl.startsWith('http');
 
   return (
     <div
@@ -128,6 +131,8 @@ function SoftwareCard({ app }: SoftwareCardProps) {
         {/* Botón de Acción */}
         <Link
           href={app.demoUrl}
+          target={isExternal ? "_blank" : undefined}
+          rel={isExternal ? "noopener noreferrer" : undefined}
           className={cn(
             "block w-full mt-6 px-4 py-3 rounded-lg",
             "bg-slate-800 border border-slate-700 text-white",
@@ -138,7 +143,7 @@ function SoftwareCard({ app }: SoftwareCardProps) {
             "focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2 focus:ring-offset-slate-900"
           )}
         >
-          Ver Demo Interactiva
+          {isExternal ? "Probar en Web Real" : "Ver Demo Interactiva"}
         </Link>
       </div>
     </div>

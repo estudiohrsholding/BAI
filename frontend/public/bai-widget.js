@@ -20,11 +20,23 @@
     document.querySelector('script[src*="bai-widget.js"]');
   
   const CLIENT_ID = currentScript?.getAttribute('data-client-id') || 'default';
+  
+  // ============================================
+  // CONFIGURACIÓN DE URL (CRÍTICO PARA PRODUCCIÓN)
+  // ============================================
   // Detectar si estamos en desarrollo o producción
-  const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-  const API_URL = isDevelopment 
-    ? 'http://localhost:8000/api/v1/widget/chat'  // Desarrollo
-    : 'https://baibussines.com/api/v1/widget/chat'; // Producción
+  // IMPORTANTE: Usar URL absoluta para que funcione en sitios externos
+  const isDevelopment = window.location.hostname === 'localhost' || 
+                        window.location.hostname === '127.0.0.1' ||
+                        window.location.hostname.includes('localhost');
+  
+  // URL base del servidor B.A.I. (siempre absoluta)
+  const BASE_URL = isDevelopment 
+    ? 'http://localhost:8000'  // Desarrollo local
+    : 'https://baibussines.com'; // Producción - DOMINIO REAL DE B.A.I.
+  
+  // URL completa del endpoint del widget
+  const API_URL = `${BASE_URL}/api/v1/widget/chat`;
   
   // ============================================
   // ESTILOS CSS (Inyectados dinámicamente)
@@ -618,6 +630,12 @@
       
       // Llamada real a la API
       try {
+        // Preparar historial de conversación para mantener contexto
+        const history = this.messages.map(msg => ({
+          role: msg.role === 'user' ? 'user' : 'assistant',
+          content: msg.text
+        }));
+        
         const response = await fetch(API_URL, {
           method: 'POST',
           headers: {
@@ -625,7 +643,8 @@
           },
           body: JSON.stringify({
             message: text,
-            client_id: this.clientId
+            client_id: this.clientId,
+            history: history  // Enviar historial para contexto
           })
         });
         

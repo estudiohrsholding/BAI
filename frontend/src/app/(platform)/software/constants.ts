@@ -1,4 +1,4 @@
-import { Leaf, UtensilsCrossed, Scissors, ShoppingBag, Briefcase, Zap, ShieldCheck, TrendingUp, BrainCircuit } from 'lucide-react';
+import { Leaf, UtensilsCrossed, Scissors, ShoppingBag, Briefcase, Zap, ShieldCheck, TrendingUp, BrainCircuit, Building } from 'lucide-react';
 
 export interface SoftwareApp {
   id: string;
@@ -23,6 +23,17 @@ export const APP_CATALOG: SoftwareApp[] = [
     features: ['Omnicanalidad Total', 'Deep Research Agent', 'Modelo BI Enterprise'],
     gradient: 'from-amber-400 via-yellow-500 to-amber-600',
     isLegendary: true
+  },
+  {
+    id: 'real-estate-ai',
+    name: 'RealEstate AI',
+    sector: 'Sector Inmobiliario',
+    description: 'Agente de ventas autónomo. Se integra en tu web, cualifica leads, consulta tu inventario en tiempo real y agenda visitas.',
+    icon: Building,
+    demoUrl: '/test-inmo.html',
+    features: ['Cualificación de Leads', 'Inventario JSON/Excel', 'Agenda Automática'],
+    gradient: 'from-cyan-500 to-blue-600',
+    isLegendary: false
   },
   {
     id: 'cannabiapp',
