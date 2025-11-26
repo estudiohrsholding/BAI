@@ -1,4 +1,5 @@
 from contextlib import asynccontextmanager
+from typing import List, Dict, Any
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -11,7 +12,7 @@ from app.api.routes import billing as billing_router
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.database import create_db_and_tables, get_session
-from app.services.bai_brain import get_bai_response
+from app.services.bai_brain import get_bai_response, get_widget_response
 from app.models.chat import ChatMessage  # Import to register the model
 from app.models.user import User  # Import to register the model
 from app.models.log import SearchLog  # Import to register the model
@@ -19,6 +20,12 @@ from app.models.log import SearchLog  # Import to register the model
 
 class ChatRequest(BaseModel):
   text: str
+
+
+class WidgetChatRequest(BaseModel):
+  message: str
+  client_id: str
+  history: List[Dict[str, Any]] = []  # Historial de conversación para contexto
 
 
 @asynccontextmanager
@@ -58,6 +65,7 @@ def configure_routes(app: FastAPI) -> None:
   app.add_api_route("/health", health_check, methods=["GET"], summary="Health check endpoint")
   app.add_api_route("/api/chat", chat_endpoint, methods=["POST"], summary="Chat endpoint")
   app.add_api_route("/api/chat/history", chat_history_endpoint, methods=["GET"], summary="Chat history endpoint")
+  app.add_api_route("/api/v1/widget/chat", widget_chat_endpoint, methods=["POST"], summary="Widget chat endpoint (public)")
   app.include_router(api_router)
   app.include_router(auth_router.router, prefix="/api/auth", tags=["auth"])
   app.include_router(data_router.router, prefix="/api/data", tags=["data"])
@@ -115,6 +123,27 @@ async def chat_history_endpoint(
     }
     for msg in messages
   ]
+
+
+async def widget_chat_endpoint(
+  request: WidgetChatRequest
+) -> dict[str, str]:
+  """
+  Widget chat endpoint - PUBLIC (no authentication required).
+  
+  This endpoint is designed for external widgets embedded in client websites.
+  It accepts conversation history for context retention and custom personas
+  based on the client_id.
+  
+  Args:
+    request: WidgetChatRequest containing message, client_id, and optional history
+    
+  Returns:
+    JSON response with the AI-generated message
+  """
+  # Pasamos el historial recibido al orquestador
+  response = await get_widget_response(request.message, request.client_id, request.history)
+  return {"response": response}
 
 
 app = create_app()

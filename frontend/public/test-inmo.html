@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inmobiliaria Los Altos - Pisos en Venta</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #ffffff;
+      color: #1f2937;
+      line-height: 1.6;
+    }
+    
+    /* Header */
+    header {
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      color: white;
+      padding: 2rem 0;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    
+    header h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    
+    header p {
+      font-size: 1.1rem;
+      opacity: 0.9;
+    }
+    
+    /* Main Content */
+    main {
+      padding: 3rem 0;
+    }
+    
+    .hero {
+      text-align: center;
+      margin-bottom: 4rem;
+    }
+    
+    .hero h2 {
+      font-size: 3rem;
+      font-weight: 800;
+      color: #1e40af;
+      margin-bottom: 1rem;
+    }
+    
+    .hero p {
+      font-size: 1.25rem;
+      color: #6b7280;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    
+    /* Properties Grid */
+    .properties-section {
+      margin-top: 4rem;
+    }
+    
+    .section-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    
+    .properties-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+    
+    .property-card {
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .property-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+    }
+    
+    .property-image {
+      width: 100%;
+      height: 250px;
+      background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #6366f1;
+      font-size: 1.1rem;
+      font-weight: 600;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .property-image::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><rect width="100" height="100" fill="%23e0e7ff"/><path d="M20 20h60v60H20z" fill="%23c7d2fe" stroke="%236366f1" stroke-width="2"/><text x="50" y="55" font-family="Arial" font-size="20" fill="%236366f1" text-anchor="middle">🏠</text></svg>') repeat;
+      opacity: 0.3;
+    }
+    
+    .property-info {
+      padding: 1.5rem;
+    }
+    
+    .property-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 0.5rem;
+    }
+    
+    .property-location {
+      color: #6b7280;
+      font-size: 0.9rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .property-price {
+      font-size: 1.5rem;
+      font-weight: 800;
+      color: #1e40af;
+      margin-bottom: 0.5rem;
+    }
+    
+    .property-features {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #6b7280;
+    }
+    
+    .feature {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+    
+    /* CTA Section */
+    .cta-section {
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      padding: 3rem 0;
+      margin-top: 4rem;
+      text-align: center;
+    }
+    
+    .cta-section h3 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #1f2937;
+      margin-bottom: 1rem;
+    }
+    
+    .cta-section p {
+      font-size: 1.1rem;
+      color: #6b7280;
+      margin-bottom: 2rem;
+    }
+    
+    .cta-button {
+      display: inline-block;
+      padding: 1rem 2rem;
+      background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1.1rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 6px rgba(30, 64, 175, 0.3);
+    }
+    
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(30, 64, 175, 0.4);
+    }
+    
+    /* Footer */
+    footer {
+      background: #1f2937;
+      color: white;
+      padding: 2rem 0;
+      margin-top: 4rem;
+      text-align: center;
+    }
+    
+    footer p {
+      opacity: 0.8;
+      font-size: 0.9rem;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 2rem;
+      }
+      
+      .hero h2 {
+        font-size: 2rem;
+      }
+      
+      .properties-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header>
+    <div class="container">
+      <h1>🏢 Inmobiliaria Los Altos</h1>
+      <p>Tu hogar ideal te está esperando</p>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main>
+    <div class="container">
+      <!-- Hero Section -->
+      <div class="hero">
+        <h2>Pisos en Venta</h2>
+        <p>
+          Descubre nuestra selección exclusiva de pisos en las mejores zonas. 
+          Calidad, ubicación y precio inmejorables.
+        </p>
+      </div>
+
+      <!-- Properties Section -->
+      <div class="properties-section">
+        <h2 class="section-title">Nuestras Propiedades Destacadas</h2>
+        
+        <div class="properties-grid">
+          <!-- REF-001: Estudio Económico -->
+          <div class="property-card">
+            <div class="property-image" style="background-image: url('https://placehold.co/600x400/3b82f6/ffffff?text=REF-001%3A+Estudio+Económico'); background-size: cover; background-position: center;">
+            </div>
+            <div class="property-info">
+              <h3 class="property-title">REF-001: Estudio Económico</h3>
+              <div class="property-location">
+                📍 Zona Norte
+              </div>
+              <div class="property-price">€95,000</div>
+              <div class="property-features">
+                <span class="feature">🛏️ 1 hab.</span>
+                <span class="feature">📐 40 m²</span>
+                <span class="feature">💰 Ideal inversión</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- REF-002: Piso Céntrico -->
+          <div class="property-card">
+            <div class="property-image" style="background-image: url('https://placehold.co/600x400/10b981/ffffff?text=REF-002%3A+Piso+Céntrico'); background-size: cover; background-position: center;">
+            </div>
+            <div class="property-info">
+              <h3 class="property-title">REF-002: Piso Céntrico</h3>
+              <div class="property-location">
+                📍 C/ Mayor
+              </div>
+              <div class="property-price">€185,000</div>
+              <div class="property-features">
+                <span class="feature">🛏️ 3 hab.</span>
+                <span class="feature">📐 90 m²</span>
+                <span class="feature">🏢 Balcón, Ascensor</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- REF-003: Ático Lujo -->
+          <div class="property-card">
+            <div class="property-image" style="background-image: url('https://placehold.co/600x400/f59e0b/ffffff?text=REF-003%3A+Ático+Lujo'); background-size: cover; background-position: center;">
+            </div>
+            <div class="property-info">
+              <h3 class="property-title">REF-003: Ático Lujo</h3>
+              <div class="property-location">
+                📍 Playa del Cura
+              </div>
+              <div class="property-price">€290,000</div>
+              <div class="property-features">
+                <span class="feature">🛏️ 2 hab.</span>
+                <span class="feature">🌴 Terraza 50m²</span>
+                <span class="feature">🌊 Vistas mar</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- REF-004: Planta Baja -->
+          <div class="property-card">
+            <div class="property-image" style="background-image: url('https://placehold.co/600x400/8b5cf6/ffffff?text=REF-004%3A+Planta+Baja'); background-size: cover; background-position: center;">
+            </div>
+            <div class="property-info">
+              <h3 class="property-title">REF-004: Planta Baja</h3>
+              <div class="property-location">
+                📍 La Mata
+              </div>
+              <div class="property-price">€140,000</div>
+              <div class="property-features">
+                <span class="feature">🛏️ 2 hab.</span>
+                <span class="feature">🏡 Patio privado</span>
+                <span class="feature">🏖️ Cerca playa</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- REF-005: Chalet Independiente -->
+          <div class="property-card">
+            <div class="property-image" style="background-image: url('https://placehold.co/600x400/ef4444/ffffff?text=REF-005%3A+Chalet+Independiente'); background-size: cover; background-position: center;">
+            </div>
+            <div class="property-info">
+              <h3 class="property-title">REF-005: Chalet Independiente</h3>
+              <div class="property-location">
+                📍 Los Balcones
+              </div>
+              <div class="property-price">€350,000</div>
+              <div class="property-features">
+                <span class="feature">🛏️ 4 hab.</span>
+                <span class="feature">🏊 Piscina</span>
+                <span class="feature">🌳 Jardín 500m²</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- REF-006: Oportunidad Familiar -->
+          <div class="property-card">
+            <div class="property-image" style="background-image: url('https://placehold.co/600x400/06b6d4/ffffff?text=REF-006%3A+Oportunidad+Familiar'); background-size: cover; background-position: center;">
+            </div>
+            <div class="property-info">
+              <h3 class="property-title">REF-006: Oportunidad Familiar</h3>
+              <div class="property-location">
+                📍 Av. Habaneras
+              </div>
+              <div class="property-price">€125,000</div>
+              <div class="property-features">
+                <span class="feature">🛏️ 3 hab.</span>
+                <span class="feature">📐 85 m²</span>
+                <span class="feature">🔧 Necesita reforma</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- REF-007: Loft Industrial -->
+          <div class="property-card">
+            <div class="property-image" style="background-image: url('https://placehold.co/600x400/6366f1/ffffff?text=REF-007%3A+Loft+Industrial'); background-size: cover; background-position: center;">
+            </div>
+            <div class="property-info">
+              <h3 class="property-title">REF-007: Loft Industrial</h3>
+              <div class="property-location">
+                📍 Zona Puerto
+              </div>
+              <div class="property-price">€210,000</div>
+              <div class="property-features">
+                <span class="feature">🛏️ 1 hab. (Open Space)</span>
+                <span class="feature">🎨 Diseño moderno</span>
+                <span class="feature">🏭 Estilo industrial</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- REF-008: Apartamento Vacacional -->
+          <div class="property-card">
+            <div class="property-image" style="background-image: url('https://placehold.co/600x400/14b8a6/ffffff?text=REF-008%3A+Apartamento+Vacacional'); background-size: cover; background-position: center;">
+            </div>
+            <div class="property-info">
+              <h3 class="property-title">REF-008: Apartamento Vacacional</h3>
+              <div class="property-location">
+                📍 Rocío del Mar
+              </div>
+              <div class="property-price">€165,000</div>
+              <div class="property-features">
+                <span class="feature">🛏️ 2 hab.</span>
+                <span class="feature">🏖️ Urb. con piscina</span>
+                <span class="feature">🏝️ Zona vacacional</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- REF-009: Villa Exclusiva -->
+          <div class="property-card">
+            <div class="property-image" style="background-image: url('https://placehold.co/600x400/dc2626/ffffff?text=REF-009%3A+Villa+Exclusiva'); background-size: cover; background-position: center;">
+            </div>
+            <div class="property-info">
+              <h3 class="property-title">REF-009: Villa Exclusiva</h3>
+              <div class="property-location">
+                📍 La Veleta
+              </div>
+              <div class="property-price">€550,000</div>
+              <div class="property-features">
+                <span class="feature">🛏️ 5 hab.</span>
+                <span class="feature">🌊 Primera línea</span>
+                <span class="feature">✨ Lujo total</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CTA Section -->
+      <div class="cta-section">
+        <h3>¿Buscas algo específico?</h3>
+        <p>
+          Nuestro equipo está aquí para ayudarte a encontrar la propiedad perfecta.
+          Contáctanos y te asesoraremos sin compromiso.
+        </p>
+        <a href="#contacto" class="cta-button">Solicitar Información</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>&copy; 2025 Inmobiliaria Los Altos. Todos los derechos reservados.</p>
+      <p style="margin-top: 0.5rem; font-size: 0.8rem; opacity: 0.6;">
+        ¿Tienes dudas? Haz clic en el botón de chat en la esquina inferior derecha 👉
+      </p>
+    </div>
+  </footer>
+
+  <!-- Widget B.A.I. -->
+  <script src="/bai-widget.js" data-client-id="inmo-test-001"></script>
+</body>
+</html>
+

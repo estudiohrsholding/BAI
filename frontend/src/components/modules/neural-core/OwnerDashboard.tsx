@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Crown,
   Loader2,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -246,6 +247,34 @@ export function NeuralCoreOwnerDashboard() {
                 <span className="text-slate-400">Canales Activos</span>
                 <span className="text-amber-400 font-bold">{activeChannels}/{channels.length}</span>
               </div>
+            </div>
+
+            {/* Live Deployment - Caso de Éxito */}
+            <div className="mt-6 p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/5 relative overflow-hidden group">
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                  </span>
+                  <span className="text-xs font-bold text-emerald-400 tracking-wider">LIVE DEPLOYMENT</span>
+                </div>
+              </div>
+
+              <h3 className="text-lg font-bold text-white mb-1">Inmobiliaria Los Altos</h3>
+              <p className="text-slate-400 text-xs mb-4">
+                Agente de Ventas Inmobiliario totalmente autónomo integrado en web externa. Capta leads, agenda visitas y consulta inventario en tiempo real.
+              </p>
+
+              <a
+                href="/test-inmo.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2 bg-slate-800 hover:bg-emerald-600 border border-slate-700 hover:border-emerald-500 text-white rounded-lg text-sm font-medium transition-all flex items-center justify-center gap-2 group-hover:shadow-[0_0_15px_rgba(16,185,129,0.3)]"
+              >
+                <span>Visitar Web del Cliente</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
             </div>
           </div>
         </div>

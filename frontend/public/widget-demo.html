@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Demo - B.A.I. Widget</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 40px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+    }
+    .demo-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 40px;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    h1 {
+      color: #1f2937;
+      margin-bottom: 10px;
+    }
+    p {
+      color: #6b7280;
+      line-height: 1.6;
+    }
+    .code-block {
+      background: #f3f4f6;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      overflow-x: auto;
+    }
+    .highlight {
+      background: #fef3c7;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-container">
+    <h1>🚀 Demo del Widget B.A.I.</h1>
+    <p>
+      Este es un ejemplo de cómo se ve el widget embebido en una página web.
+      El botón de chat debería aparecer en la esquina inferior derecha.
+    </p>
+    
+    <h2>📋 Instrucciones de Uso</h2>
+    <p>
+      Para integrar el widget en tu sitio web, añade este código antes del cierre de <span class="highlight">&lt;/body&gt;</span>:
+    </p>
+    
+    <div class="code-block">
+&lt;script 
+  src="https://tu-dominio.com/bai-widget.js" 
+  data-client-id="TU_CLIENT_ID"
+&gt;&lt;/script&gt;
+    </div>
+    
+    <h2>✨ Características</h2>
+    <ul>
+      <li>✅ Sin dependencias (Vanilla JavaScript)</li>
+      <li>✅ Diseño moderno y responsive</li>
+      <li>✅ Funciona en cualquier sitio web</li>
+      <li>✅ Configurable mediante atributos data-*</li>
+      <li>✅ API pública para control programático</li>
+    </ul>
+    
+    <h2>🎮 API Pública</h2>
+    <p>Puedes controlar el widget desde la consola del navegador:</p>
+    <div class="code-block">
+// Abrir el chat
+window.BAI.open();
+
+// Cerrar el chat
+window.BAI.close();
+
+// Toggle (abrir/cerrar)
+window.BAI.toggle();
+
+// Enviar mensaje programáticamente
+window.BAI.sendMessage('Hola, B.A.I.!');
+    </div>
+    
+    <h2>📝 Notas</h2>
+    <p>
+      <strong>Modo Echo:</strong> Por ahora, el widget responde automáticamente con un mensaje de prueba.
+      En producción, se conectará a la API real de B.A.I.
+    </p>
+  </div>
+  
+  <!-- Widget B.A.I. -->
+  <script src="/bai-widget.js" data-client-id="demo-client-123"></script>
+</body>
+</html>
+
