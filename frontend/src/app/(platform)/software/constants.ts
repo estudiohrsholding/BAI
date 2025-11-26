@@ -1,4 +1,4 @@
-import { Leaf, UtensilsCrossed, Scissors, ShoppingBag, Briefcase, Zap, ShieldCheck, TrendingUp } from 'lucide-react';
+import { Leaf, UtensilsCrossed, Scissors, ShoppingBag, Briefcase, Zap, ShieldCheck, TrendingUp, BrainCircuit } from 'lucide-react';
 
 export interface SoftwareApp {
   id: string;
@@ -9,9 +9,21 @@ export interface SoftwareApp {
   demoUrl: string;
   features: string[];
   gradient: string; // Para darle personalidad visual a cada tarjeta
+  isLegendary?: boolean; // Item de rareza Mítica
 }
 
 export const APP_CATALOG: SoftwareApp[] = [
+  {
+    id: 'neural-core',
+    name: 'B.A.I. Neural Core',
+    sector: 'Inteligencia Artificial & BI',
+    description: 'El cerebro central. Chatbot omnicanal con Deep Research y modelos neuronales entrenados para Business Intelligence.',
+    icon: BrainCircuit,
+    demoUrl: '/demos/neural-core',
+    features: ['Omnicanalidad Total', 'Deep Research Agent', 'Modelo BI Enterprise'],
+    gradient: 'from-amber-400 via-yellow-500 to-amber-600',
+    isLegendary: true
+  },
   {
     id: 'cannabiapp',
     name: 'Cannabiapp',

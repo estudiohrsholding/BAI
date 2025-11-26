@@ -31,10 +31,18 @@ export default function SoftwarePage() {
         </div>
 
         {/* Grid de Cards */}
+        {/* Ordenar: Legendarios primero, luego el resto */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {APP_CATALOG.map((app) => (
-            <SoftwareCard key={app.id} app={app} />
-          ))}
+          {[...APP_CATALOG]
+            .sort((a, b) => {
+              // Legendarios primero
+              if (a.isLegendary && !b.isLegendary) return -1;
+              if (!a.isLegendary && b.isLegendary) return 1;
+              return 0;
+            })
+            .map((app) => (
+              <SoftwareCard key={app.id} app={app} />
+            ))}
         </div>
       </div>
     </div>
@@ -47,16 +55,28 @@ interface SoftwareCardProps {
 
 function SoftwareCard({ app }: SoftwareCardProps) {
   const Icon = app.icon;
+  const isLegendary = app.isLegendary || false;
 
   return (
     <div
       className={cn(
-        "group relative bg-slate-900 border border-slate-800 rounded-xl",
+        "group relative bg-slate-900 rounded-xl",
         "overflow-hidden transition-all duration-300",
-        "hover:border-slate-700 hover:shadow-xl hover:shadow-slate-900/50",
+        isLegendary
+          ? "border-2 border-amber-500/50 shadow-[0_0_30px_rgba(245,158,11,0.15)] hover:shadow-[0_0_40px_rgba(245,158,11,0.25)]"
+          : "border border-slate-800 hover:border-slate-700 hover:shadow-xl hover:shadow-slate-900/50",
         "hover:-translate-y-1"
       )}
     >
+      {/* Badge Legendario */}
+      {isLegendary && (
+        <div className="absolute top-4 right-4 z-10">
+          <div className="bg-gradient-to-r from-amber-400 to-yellow-500 text-black text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider shadow-lg">
+            Core Technology
+          </div>
+        </div>
+      )}
+
       {/* Borde superior con gradient */}
       <div
         className={cn(
@@ -71,12 +91,18 @@ function SoftwareCard({ app }: SoftwareCardProps) {
         <div className="flex items-start gap-4">
           <div
             className={cn(
-              "p-3 rounded-lg bg-slate-800 border border-slate-700",
-              "group-hover:border-slate-600 transition-colors",
-              "flex-shrink-0"
+              "p-3 rounded-lg border transition-colors flex-shrink-0",
+              isLegendary
+                ? "bg-amber-500/20 border-amber-500/40 group-hover:border-amber-500/60"
+                : "bg-slate-800 border-slate-700 group-hover:border-slate-600"
             )}
           >
-            <Icon className="h-6 w-6 text-slate-300" />
+            <Icon
+              className={cn(
+                "h-6 w-6",
+                isLegendary ? "text-amber-400" : "text-slate-300"
+              )}
+            />
           </div>
           <div className="flex-1 min-w-0">
             <h3 className="text-xl font-bold text-white mb-1">{app.name}</h3>

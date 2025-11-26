@@ -88,7 +88,8 @@ export default function DemoPage({ params }: { params: { appId: string } }) {
       {/* --- CONTENIDO PRINCIPAL --- */}
       {/* El Sidebar ya está renderizado por el layout, solo mostramos el contenido */}
       <div className="flex-1 overflow-y-auto">
-        {/* Si existe un Dashboard específico y el rol es 'owner', mostrarlo */}
+        {/* Renderizado condicional: Si existe un Dashboard específico y el rol es 'owner', mostrarlo */}
+        {/* Esto incluye: cannabiapp, restaurantiapp, neural-core, etc. */}
         {SpecificDashboard && currentRole === "owner" ? (
           <div className="-mx-4 md:-mx-8">
             <SpecificDashboard />

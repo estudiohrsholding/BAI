@@ -3,6 +3,7 @@
 import { ComponentType } from "react";
 import { CannabiappOwnerDashboard } from "./CannabiApp/OwnerDashboard";
 import { RestaurantiappOwnerDashboard } from "./restaurantiapp/OwnerDashboard";
+import { NeuralCoreOwnerDashboard } from "./neural-core/OwnerDashboard";
 
 /**
  * Registry Pattern: Mapea appId -> Componente Dashboard específico
@@ -30,6 +31,7 @@ export interface AppDashboardRegistry {
 export const APP_DASHBOARD_REGISTRY: AppDashboardRegistry = {
   cannabiapp: CannabiappOwnerDashboard,
   restaurantiapp: RestaurantiappOwnerDashboard,
+  "neural-core": NeuralCoreOwnerDashboard,
   // stylebook: StylebookOwnerDashboard,  // TODO: Implementar
   // retailflow: RetailflowOwnerDashboard, // TODO: Implementar
   // bizcore: BizcoreOwnerDashboard,       // TODO: Implementar
