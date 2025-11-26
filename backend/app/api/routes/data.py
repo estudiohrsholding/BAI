@@ -1,12 +1,19 @@
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 from sqlmodel import Session, select
 
 from app.api.deps import get_current_user
 from app.core.database import get_session
 from app.models.log import SearchLog
 from app.models.user import User
+from app.models.mining import MiningReport
+from app.services.mining_report import generate_mining_report
 
 router = APIRouter()
+
+
+class MiningReportRequest(BaseModel):
+    topic: str | None = None  # Opcional: si no se proporciona, se extrae del historial
 
 
 @router.get("/logs")
@@ -45,4 +52,29 @@ async def get_search_logs(
     }
     for log in logs
   ]
+
+
+@router.post("/mining-report", response_model=MiningReport)
+async def create_mining_report(
+  request: MiningReportRequest,
+  current_user: User = Depends(get_current_user),
+  session: Session = Depends(get_session)
+) -> MiningReport:
+  """
+  Genera un reporte completo de Data Mining usando Gemini y Brave Search API.
+  
+  El reporte se genera basándose en:
+  - El historial de chat reciente del usuario (para extraer contexto)
+  - Búsquedas en Brave Search API sobre el tema
+  - Análisis con Gemini para estructurar los datos
+  
+  Returns:
+    MiningReport con todos los datos estructurados para los gráficos del frontend
+  """
+  report = await generate_mining_report(
+    session=session,
+    user_id=current_user.id,
+    topic=request.topic
+  )
+  return report
 

@@ -55,6 +55,7 @@ def configure_cors(app: FastAPI) -> None:
 
 def configure_routes(app: FastAPI) -> None:
   app.add_api_route("/", root, methods=["GET"], summary="Root")
+  app.add_api_route("/health", health_check, methods=["GET"], summary="Health check endpoint")
   app.add_api_route("/api/chat", chat_endpoint, methods=["POST"], summary="Chat endpoint")
   app.add_api_route("/api/chat/history", chat_history_endpoint, methods=["GET"], summary="Chat history endpoint")
   app.include_router(api_router)
@@ -65,6 +66,14 @@ def configure_routes(app: FastAPI) -> None:
 
 async def root() -> dict[str, str]:
   return {"message": "Welcome to B.A.I. Partner API"}
+
+
+async def health_check() -> dict[str, str]:
+  """
+  Health check endpoint.
+  Returns 200 OK if the service is running.
+  """
+  return {"status": "ok", "service": "BAI_Backend_v1"}
 
 
 async def chat_endpoint(

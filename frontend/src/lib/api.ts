@@ -24,7 +24,7 @@ export function getChatApiUrl(): string {
  * Get the health check endpoint URL
  */
 export function getHealthCheckUrl(): string {
-  return getApiUrl();
+  return `${getApiUrl()}/health`;
 }
 
 /**
@@ -74,4 +74,11 @@ export function getBillingUpgradeUrl(): string {
  */
 export function getBillingCheckoutUrl(): string {
   return `${getApiUrl()}/api/billing/create-checkout`;
+}
+
+/**
+ * Get the data mining report generation endpoint URL
+ */
+export function getMiningReportUrl(): string {
+  return `${getApiUrl()}/api/data/mining-report`;
 }

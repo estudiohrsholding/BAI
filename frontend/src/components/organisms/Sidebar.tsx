@@ -31,7 +31,7 @@ const navItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Automation", href: "/automation", icon: Workflow },
   { label: "Software Studio", href: "/software", icon: AppWindow },
-  { label: "Data Mining", href: "/data", icon: DatabaseZap },
+  { label: "Data Mining", href: "/data-mining", icon: DatabaseZap },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
