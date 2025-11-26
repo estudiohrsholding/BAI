@@ -48,13 +48,43 @@ def create_app() -> FastAPI:
 
 
 def configure_cors(app: FastAPI) -> None:
+  """
+  Configuración de CORS para permitir peticiones desde múltiples orígenes.
+  
+  PLATAFORMA MULTI-TENENCIA:
+  - Permite widgets embebidos en cualquier dominio de cliente
+  - Por ahora, permite todos los orígenes ("*") para facilitar despliegue inicial
+  - TODO: Restrict allowed origins in production para mayor seguridad
+  
+  IMPORTANTE: 
+  - Para producción estricta, listar dominios específicos de clientes.
+  - Para despliegue rápido inicial, usar ["*"] evita problemas de CORS si no se
+    conoce el dominio exacto del cliente aún.
+  - NOTA: Si usas allow_credentials=True, NO puedes usar "*" junto con orígenes
+    específicos. Debe ser solo "*" o solo la lista de dominios.
+  """
+  # TODO: Restrict allowed origins in production
+  # En producción, reemplazar ["*"] con lista específica de dominios de clientes:
+  # allowed_origins = [
+  #   "http://localhost:3000",  # Development
+  #   "https://baibussines.com",  # B.A.I. Platform
+  #   "https://www.cliente-inmobiliaria-1.com",
+  #   "https://www.cliente-inmobiliaria-2.es",
+  #   "https://www.inmobiliaria-pepe.com",
+  # ]
+  # allow_credentials = True  # Con lista específica, podemos usar credentials
+  
+  # Por ahora, permitir todos los orígenes para facilitar despliegue multi-tenant
+  # Esto permite que cualquier cliente inmobiliario embeba el widget sin problemas de CORS
+  # NOTA: Con allow_origins=["*"], debemos usar allow_credentials=False
+  # (FastAPI no permite "*" con credentials por seguridad)
+  allowed_origins = ["*"]
+  allow_credentials = False  # Cambiar a True cuando se use lista específica de dominios
+  
   app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-      "http://localhost:3000",  # Development
-      "https://baibussines.com",  # Production
-    ],
-    allow_credentials=True,
+    allow_origins=allowed_origins,
+    allow_credentials=allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"]
   )

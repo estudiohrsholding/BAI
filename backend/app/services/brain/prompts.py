@@ -22,12 +22,15 @@ class PromptManager:
         Busca el archivo en app/data/inventories/{client_id}.json
         y lo convierte a un string formateado legible para la IA.
         
+        Manejo robusto de errores: Si el archivo no existe o falla,
+        devuelve un mensaje genérico sin romper el servidor.
+        
         Args:
-            client_id: ID del cliente (ej: 'inmo-test-001')
+            client_id: ID del cliente (ej: 'inmo-test-001', 'inmo-cliente-002')
             
         Returns:
             String formateado con el inventario para el prompt.
-            Si no existe o falla, devuelve mensaje de "Inventario no disponible".
+            Si no existe o falla, devuelve mensaje genérico sin romper el servidor.
         """
         # Construir ruta absoluta de forma segura dentro de Docker
         # Path(__file__) = backend/app/services/brain/prompts.py
@@ -41,15 +44,16 @@ class PromptManager:
         try:
             # Verificar si el archivo existe
             if not inventory_file.exists():
-                return "INVENTARIO: No disponible en este momento."
+                # Inventario no disponible - no rompe el servidor, solo informa
+                return "INVENTARIO: No disponible en este momento. Por favor, contacta con la inmobiliaria directamente."
             
             # Leer y parsear JSON
             with open(inventory_file, 'r', encoding='utf-8') as f:
                 properties = json.load(f)
             
             # Validar que hay propiedades
-            if not properties or not isinstance(properties, list):
-                return "INVENTARIO: No hay propiedades disponibles."
+            if not properties or not isinstance(properties, list) or len(properties) == 0:
+                return "INVENTARIO: No hay propiedades disponibles en este momento. Por favor, contacta con la inmobiliaria directamente."
             
             # Formatear el inventario como texto legible para la IA
             inventory_lines = ["INVENTARIO DISPONIBLE (Solo ofrece esto):\n"]
@@ -69,14 +73,17 @@ class PromptManager:
             return "\n".join(inventory_lines)
             
         except json.JSONDecodeError as e:
-            # Error al parsear JSON
-            return f"INVENTARIO: Error al leer datos (JSON inválido: {str(e)})."
+            # Error al parsear JSON - log pero no rompe el servidor
+            print(f"Warning: Error parsing inventory JSON for {client_id}: {str(e)}")
+            return "INVENTARIO: Error al leer datos. Por favor, contacta con la inmobiliaria directamente."
         except IOError as e:
-            # Error al leer archivo
-            return f"INVENTARIO: Error al cargar archivo ({str(e)})."
+            # Error al leer archivo - log pero no rompe el servidor
+            print(f"Warning: Error reading inventory file for {client_id}: {str(e)}")
+            return "INVENTARIO: Error al cargar archivo. Por favor, contacta con la inmobiliaria directamente."
         except Exception as e:
-            # Cualquier otro error
-            return f"INVENTARIO: Error inesperado ({str(e)})."
+            # Cualquier otro error - log pero no rompe el servidor
+            print(f"Warning: Unexpected error loading inventory for {client_id}: {str(e)}")
+            return "INVENTARIO: Error inesperado. Por favor, contacta con la inmobiliaria directamente."
     
     # Base B.A.I. persona
     BAI_BASE_PROMPT = (
@@ -113,16 +120,19 @@ class PromptManager:
     
     # Widget personas registry (se construye dinámicamente)
     @classmethod
-    def _get_inmo_prompt(cls) -> str:
+    def _get_inmo_prompt(cls, client_id: str) -> str:
         """
         Construye el prompt para el agente inmobiliario.
         Carga el inventario desde JSON dinámicamente usando _load_inventory.
+        
+        Args:
+            client_id: ID del cliente inmobiliario (ej: 'inmo-test-001', 'inmo-cliente-real')
         """
-        # Cargar inventario dinámicamente desde archivo JSON
-        inventory_text = cls._load_inventory("inmo-test-001")
+        # Cargar inventario dinámicamente desde archivo JSON usando el client_id
+        inventory_text = cls._load_inventory(client_id)
         
         return (
-            "Eres el Agente Virtual de 'Inmobiliaria Los Altos'.\n"
+            "Eres el Agente Virtual de una Inmobiliaria.\n"
             "OBJETIVO: Cualificar leads y cerrar visitas para el inventario disponible.\n\n"
             f"{inventory_text}\n\n"
             "MEMORIA Y DEDUCCIÓN (CRÍTICO):\n"
@@ -137,9 +147,9 @@ class PromptManager:
             "[ ] Habitaciones (Si aplica)\n"
             "[ ] Contacto (Nombre + Teléfono)\n\n"
             "REGLAS DE VENTA:\n"
-            "- Si el usuario pide algo que TIENES en el inventario (ej: 'piso 3 habs centro'), ofrécele la REF-002 inmediatamente y pide visita.\n"
-            "- Si pide algo que NO tienes (ej: 'casa con piscina por 50k'), di honestamente que no tienes eso ahora mismo, pero ofrece la alternativa más cercana (ej: el estudio REF-001).\n"
-            "- Si el usuario pregunta '¿Tienes algo barato?', ofrécele el REF-001 (Estudio 95k) o REF-004 (Planta Baja 140k) según su presupuesto.\n"
+            "- Si el usuario pide algo que TIENES en el inventario, ofrécele la propiedad correspondiente inmediatamente y pide visita.\n"
+            "- Si pide algo que NO tienes, di honestamente que no tienes eso ahora mismo, pero ofrece la alternativa más cercana disponible.\n"
+            "- Si el usuario pregunta '¿Tienes algo barato?', ofrécele las opciones más económicas del inventario según su presupuesto.\n"
             "- Tu meta es conseguir: Nombre y Teléfono para agendar visita a una propiedad concreta del inventario.\n"
             "- Si tienes Nombre y Teléfono + 2 datos clave (ej: Zona y Presupuesto), CIERRA LA VENTA. Di: 'Perfecto [Nombre], con estos datos busco las mejores opciones y te llamo al [Teléfono] hoy mismo. ¡Gracias!'.\n"
             "- Jamás preguntes algo que ya está en el historial.\n"
@@ -151,17 +161,23 @@ class PromptManager:
         """
         Get system prompt for a specific widget client.
         
+        Lógica generalizada: Si client_id empieza con 'inmo-', usa el prompt inmobiliario
+        y carga su inventario correspondiente desde {client_id}.json.
+        
+        Esto permite dar de alta nuevos clientes inmobiliarios solo creando su JSON,
+        sin tocar código Python cada vez.
+        
         Args:
-            client_id: The client identifier (e.g., 'inmo-test-001')
+            client_id: The client identifier (e.g., 'inmo-test-001', 'inmo-cliente-real')
             
         Returns:
             System prompt for the widget, or generic B.A.I. prompt if not found
         """
-        # Cargar dinámicamente el prompt para inmobiliaria
-        if client_id == "inmo-test-001":
-            return cls._get_inmo_prompt()
+        # Lógica generalizada: Cualquier client_id que empiece con 'inmo-' usa prompt inmobiliario
+        if client_id and client_id.startswith("inmo-"):
+            return cls._get_inmo_prompt(client_id)
         
-        # Generic widget prompt
+        # Generic widget prompt para otros tipos de clientes
         return (
             "Eres B.A.I. (Business Artificial Intelligence), un asistente virtual amigable y profesional. "
             "Tu objetivo es ayudar al usuario de forma clara y concisa. "
@@ -190,12 +206,19 @@ class PromptManager:
     @classmethod
     def get_system_prompt(cls, client_id: Optional[str] = None) -> str:
         """
-        Get system prompt for a widget client (alias for get_widget_prompt for compatibility).
+        Get system prompt for a widget client.
         
-        This method is an alias that provides compatibility with code expecting 'get_system_prompt'.
+        Lógica Multi-Tenencia:
+        - Si client_id empieza con 'inmo-', detecta automáticamente que es un cliente inmobiliario
+        - Carga su inventario desde {client_id}.json dinámicamente
+        - Inyecta el inventario en el prompt inmobiliario genérico
+        - Si el archivo no existe, el servidor sigue funcionando (manejo robusto de errores)
+        
+        Esto permite añadir nuevos clientes inmobiliarios solo creando su JSON,
+        sin tocar código Python cada vez.
         
         Args:
-            client_id: The client identifier (e.g., 'inmo-test-001')
+            client_id: The client identifier (e.g., 'inmo-test-001', 'inmo-cliente-002', 'inmo-pepe')
             
         Returns:
             System prompt for the widget, or generic B.A.I. prompt if not found
@@ -203,7 +226,8 @@ class PromptManager:
         if client_id is None:
             return cls.BAI_BASE_PROMPT
         
-        # Use get_widget_prompt which now handles JSON loading dynamically
+        # Use get_widget_prompt which now handles multi-tenant logic dynamically
+        # Detecta automáticamente clientes inmobiliarios por prefijo 'inmo-'
         return cls.get_widget_prompt(client_id)
     
     @classmethod

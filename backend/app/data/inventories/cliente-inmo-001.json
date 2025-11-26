@@ -1,0 +1,75 @@
+[
+  {
+    "ref": "REF-001",
+    "titulo": "Estudio Económico",
+    "zona": "Zona Norte",
+    "precio": 95000,
+    "habitaciones": 1,
+    "detalles": "40m2. Ideal inversión. Estado: Reformado."
+  },
+  {
+    "ref": "REF-002",
+    "titulo": "Piso Céntrico",
+    "zona": "C/ Mayor",
+    "precio": 185000,
+    "habitaciones": 3,
+    "detalles": "90m2. Con balcón y ascensor. Necesita pequeña reforma."
+  },
+  {
+    "ref": "REF-003",
+    "titulo": "Ático Lujo",
+    "zona": "Playa del Cura",
+    "precio": 290000,
+    "habitaciones": 2,
+    "detalles": "Terraza gigante 50m2. Vistas al mar. Lujo."
+  },
+  {
+    "ref": "REF-004",
+    "titulo": "Planta Baja",
+    "zona": "La Mata",
+    "precio": 140000,
+    "habitaciones": 2,
+    "detalles": "Patio privado. Cerca de playa."
+  },
+  {
+    "ref": "REF-005",
+    "titulo": "Chalet Independiente",
+    "zona": "Los Balcones",
+    "precio": 350000,
+    "habitaciones": 4,
+    "detalles": "Piscina, Jardín 500m2. Garaje privado."
+  },
+  {
+    "ref": "REF-006",
+    "titulo": "Oportunidad Familiar",
+    "zona": "Av. Habaneras",
+    "precio": 125000,
+    "habitaciones": 3,
+    "detalles": "85m2. Luminoso. Cerca de servicios."
+  },
+  {
+    "ref": "REF-007",
+    "titulo": "Loft Industrial",
+    "zona": "Zona Puerto",
+    "precio": 210000,
+    "habitaciones": 1,
+    "detalles": "Diseño moderno open space. Techos altos."
+  },
+  {
+    "ref": "REF-008",
+    "titulo": "Apartamento Vacacional",
+    "zona": "Rocío del Mar",
+    "precio": 165000,
+    "habitaciones": 2,
+    "detalles": "Urbanización cerrada con piscina comunitaria."
+  },
+  {
+    "ref": "REF-009",
+    "titulo": "Villa Exclusiva",
+    "zona": "La Veleta",
+    "precio": 550000,
+    "habitaciones": 5,
+    "detalles": "Primera línea. Lujo total. Parcela 800m2."
+  }
+]
+
