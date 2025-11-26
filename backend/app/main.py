@@ -1,7 +1,7 @@
 from contextlib import asynccontextmanager
 from typing import List, Dict, Any
-from fastapi import FastAPI, Depends
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Depends, Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
@@ -47,47 +47,94 @@ def create_app() -> FastAPI:
   return application
 
 
+class SelectiveCORSMiddleware(BaseHTTPMiddleware):
+  """
+  Middleware CORS selectivo que aplica diferentes políticas según la ruta.
+  
+  SEGURIDAD DEFENSE-IN-DEPTH:
+  - Endpoints públicos (widget): CORS abierto ["*"] para multi-tenencia
+  - Endpoints autenticados: CORS restringido a orígenes específicos
+  
+  Esto previene que sitios maliciosos hagan peticiones a endpoints autenticados,
+  incluso si tienen un JWT válido (robado o filtrado).
+  """
+  
+  # Endpoint público del widget (permite cualquier origen)
+  PUBLIC_WIDGET_PATH = "/api/v1/widget/chat"
+  
+  # Orígenes permitidos para endpoints autenticados (B.A.I. Platform)
+  TRUSTED_ORIGINS = [
+    "http://localhost:3000",  # Development
+    "https://baibussines.com",  # Production (B.A.I. Platform)
+    "https://www.baibussines.com",  # Production (con www)
+  ]
+  
+  async def dispatch(self, request: Request, call_next):
+    origin = request.headers.get("origin")
+    
+    # Determinar si es endpoint público o autenticado
+    is_public_widget = request.url.path == self.PUBLIC_WIDGET_PATH
+    
+    # Preparar headers CORS según el tipo de endpoint
+    if is_public_widget:
+      # Endpoint público: permitir cualquier origen (multi-tenencia)
+      cors_headers = {
+        "Access-Control-Allow-Origin": origin if origin else "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Credentials": "false",
+      }
+    else:
+      # Endpoints autenticados: solo orígenes confiables
+      if origin and origin in self.TRUSTED_ORIGINS:
+        cors_headers = {
+          "Access-Control-Allow-Origin": origin,
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "*",
+          "Access-Control-Allow-Credentials": "true",
+        }
+      else:
+        # Origen no confiable: no permitir CORS (pero no bloquear la petición)
+        # El endpoint autenticado rechazará si no hay token válido
+        cors_headers = {}
+    
+    # Manejar preflight OPTIONS
+    if request.method == "OPTIONS":
+      response = Response()
+      response.headers.update(cors_headers)
+      return response
+    
+    # Procesar la petición normal
+    response = await call_next(request)
+    
+    # Añadir headers CORS a la respuesta
+    response.headers.update(cors_headers)
+    
+    return response
+
+
 def configure_cors(app: FastAPI) -> None:
   """
-  Configuración de CORS para permitir peticiones desde múltiples orígenes.
+  Configuración de CORS selectiva por ruta.
+  
+  SEGURIDAD DEFENSE-IN-DEPTH:
+  - Endpoints públicos (widget): CORS abierto ["*"] para multi-tenencia
+  - Endpoints autenticados: CORS restringido a orígenes confiables
+  
+  Esto previene que sitios maliciosos hagan peticiones a endpoints autenticados,
+  incluso si tienen un JWT válido (robado o filtrado).
   
   PLATAFORMA MULTI-TENENCIA:
-  - Permite widgets embebidos en cualquier dominio de cliente
-  - Por ahora, permite todos los orígenes ("*") para facilitar despliegue inicial
-  - TODO: Restrict allowed origins in production para mayor seguridad
+  - El widget público puede embeberse en cualquier dominio de cliente
+  - Los endpoints autenticados solo aceptan peticiones desde B.A.I. Platform
   
-  IMPORTANTE: 
-  - Para producción estricta, listar dominios específicos de clientes.
-  - Para despliegue rápido inicial, usar ["*"] evita problemas de CORS si no se
-    conoce el dominio exacto del cliente aún.
-  - NOTA: Si usas allow_credentials=True, NO puedes usar "*" junto con orígenes
-    específicos. Debe ser solo "*" o solo la lista de dominios.
+  IMPLEMENTACIÓN:
+  - Usa middleware personalizado que verifica la ruta antes de aplicar CORS
+  - Solo /api/v1/widget/chat permite cualquier origen
+  - Todos los demás endpoints requieren orígenes confiables
   """
-  # TODO: Restrict allowed origins in production
-  # En producción, reemplazar ["*"] con lista específica de dominios de clientes:
-  # allowed_origins = [
-  #   "http://localhost:3000",  # Development
-  #   "https://baibussines.com",  # B.A.I. Platform
-  #   "https://www.cliente-inmobiliaria-1.com",
-  #   "https://www.cliente-inmobiliaria-2.es",
-  #   "https://www.inmobiliaria-pepe.com",
-  # ]
-  # allow_credentials = True  # Con lista específica, podemos usar credentials
-  
-  # Por ahora, permitir todos los orígenes para facilitar despliegue multi-tenant
-  # Esto permite que cualquier cliente inmobiliario embeba el widget sin problemas de CORS
-  # NOTA: Con allow_origins=["*"], debemos usar allow_credentials=False
-  # (FastAPI no permite "*" con credentials por seguridad)
-  allowed_origins = ["*"]
-  allow_credentials = False  # Cambiar a True cuando se use lista específica de dominios
-  
-  app.add_middleware(
-    CORSMiddleware,
-    allow_origins=allowed_origins,
-    allow_credentials=allow_credentials,
-    allow_methods=["*"],
-    allow_headers=["*"]
-  )
+  # Middleware personalizado que aplica CORS selectivo según la ruta
+  app.add_middleware(SelectiveCORSMiddleware)
 
 
 def configure_routes(app: FastAPI) -> None:
