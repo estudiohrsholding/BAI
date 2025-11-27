@@ -13,6 +13,7 @@ import {
   Save,
   Key,
   Sparkles,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -33,6 +34,7 @@ import { Button } from "@/components/atoms/Button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { CampaignStatusList } from "@/components/content_creator/CampaignStatusList";
 import { CampaignStatusTracker } from "@/components/content_planner/CampaignStatusTracker";
+import { CampaignResultViewer } from "@/components/content_planner/CampaignResultViewer";
 
 interface User {
   id: number;
@@ -69,6 +71,7 @@ export default function ConfiguracionPage() {
   const [isLaunchingCampaign, setIsLaunchingCampaign] = useState(false);
   const [monthlyCampaigns, setMonthlyCampaigns] = useState<any[]>([]);
   const [isLoadingMonthlyCampaigns, setIsLoadingMonthlyCampaigns] = useState(false);
+  const [viewingCampaignId, setViewingCampaignId] = useState<number | null>(null);
 
   // Form state for PARTNER (Content Creator)
   const [campaignName, setCampaignName] = useState("");
@@ -764,20 +767,31 @@ export default function ConfiguracionPage() {
                         </div>
                       )}
 
-                      {campaign.status === "completed" && campaign.generated_content && (
+                      {campaign.generated_content && (
                         <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 mb-3">
-                          <p className="text-xs font-medium text-emerald-400 mb-2">
-                            ✓ Contenido Generado
-                          </p>
-                          <div className="space-y-1 text-xs text-slate-300">
-                            <div>
-                              <span className="text-slate-400">Posts:</span>{" "}
-                              {campaign.generated_content.posts?.length || 0} piezas
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <p className="text-xs font-medium text-emerald-400 mb-2">
+                                ✓ Contenido Generado
+                              </p>
+                              <div className="space-y-1 text-xs text-slate-300">
+                                <div>
+                                  <span className="text-slate-400">Posts:</span>{" "}
+                                  {campaign.generated_content.posts?.length || 0} piezas
+                                </div>
+                                <div>
+                                  <span className="text-slate-400">Reel:</span>{" "}
+                                  {campaign.generated_content.reel ? "1 pieza" : "0 piezas"}
+                                </div>
+                              </div>
                             </div>
-                            <div>
-                              <span className="text-slate-400">Reel:</span>{" "}
-                              {campaign.generated_content.reel ? "1 pieza" : "0 piezas"}
-                            </div>
+                            <button
+                              onClick={() => setViewingCampaignId(campaign.id)}
+                              className="ml-4 flex items-center gap-1.5 rounded-md border-2 border-violet-500 bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500 hover:border-violet-400 transition-all shadow-lg shadow-violet-500/20 whitespace-nowrap"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              Ver Resultados
+                            </button>
                           </div>
                         </div>
                       )}
@@ -803,6 +817,17 @@ export default function ConfiguracionPage() {
                     </div>
                   ))}
                 </div>
+              )}
+
+              {/* Result Viewer Modal */}
+              {viewingCampaignId && (
+                <CampaignResultViewer
+                  campaign={monthlyCampaigns.find((c) => c.id === viewingCampaignId)!}
+                  open={viewingCampaignId !== null}
+                  onOpenChange={(open) => {
+                    if (!open) setViewingCampaignId(null);
+                  }}
+                />
               )}
             </div>
           </FeatureGate>
