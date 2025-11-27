@@ -146,8 +146,24 @@ export function CampaignStatusTracker({
                   jobStatus.campaign_status === "in_progress" ||
                   jobStatus.job_status === "queued";
 
-  const isCompleted = jobStatus.job_status === "complete" || 
-                     jobStatus.campaign_status === "completed";
+  // Función robusta para verificar si está completado (case-insensitive)
+  const isCompleted = () => {
+    const jobStatusLower = (jobStatus.job_status || "").toLowerCase();
+    const campaignStatusLower = (jobStatus.campaign_status || "").toLowerCase();
+    const campaignStatusFromProp = (campaign?.status || "").toLowerCase();
+    
+    const completedVariants = ["complete", "completed", "completado"];
+    
+    return (
+      completedVariants.includes(jobStatusLower) ||
+      completedVariants.includes(campaignStatusLower) ||
+      completedVariants.includes(campaignStatusFromProp)
+    );
+  };
+
+  // Verificar si hay contenido generado disponible
+  const hasGeneratedContent = campaign?.generated_content && 
+                               Object.keys(campaign.generated_content).length > 0;
 
   return (
     <>
@@ -166,13 +182,13 @@ export function CampaignStatusTracker({
             >
               {getStatusLabel()}
             </span>
-            {isCompleted && campaign && campaign.generated_content && (
+            {isCompleted() && hasGeneratedContent && (
               <button
                 onClick={() => setIsViewerOpen(true)}
-                className="flex items-center gap-1.5 rounded-md border border-violet-500/50 bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300 hover:bg-violet-500/20 transition-colors"
+                className="flex items-center gap-1.5 rounded-md border-2 border-violet-500 bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500 hover:border-violet-400 transition-all shadow-lg shadow-violet-500/20"
               >
-                <Eye className="h-3 w-3" />
-                Ver Contenido
+                <Eye className="h-3.5 w-3.5" />
+                Ver Contenido Generado
               </button>
             )}
           </div>
