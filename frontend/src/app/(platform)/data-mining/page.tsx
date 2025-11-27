@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Cookies from "js-cookie";
 import {
   Bot,
   Lock,
@@ -46,7 +45,7 @@ import {
 import { ProcessingTerminal } from "@/components/modules/data-mining/ProcessingTerminal";
 import { useChat } from "@/context/ChatContext";
 import { cn } from "@/lib/utils";
-import { getMiningReportUrl, getChatHistoryUrl } from "@/lib/api";
+import { apiGet, apiPost, ApiError } from "@/lib/api-client";
 
 // ============================================
 // ESTRUCTURA DE DATOS DINÁMICA
@@ -202,22 +201,13 @@ export default function DataMiningPage() {
   // Verificar si hay historial de chat reciente
   useEffect(() => {
     const checkChatHistory = async () => {
-      const token = Cookies.get("bai_token");
-      if (!token) return;
-
       try {
-        const historyResponse = await fetch(getChatHistoryUrl(), {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!historyResponse.ok) return;
-
-        const history = await historyResponse.json();
+        // Usar cliente API centralizado (inyección automática de token)
+        const history = await apiGet<Array<{ timestamp?: string }>>("/api/chat/history");
+        
         if (Array.isArray(history) && history.length > 0) {
           // Verificar si hay mensajes recientes (últimas 2 horas)
-          const recentMessages = history.filter((msg: any) => {
+          const recentMessages = history.filter((msg) => {
             if (!msg.timestamp) return false;
             const msgTime = new Date(msg.timestamp).getTime();
             const twoHoursAgo = Date.now() - 2 * 60 * 60 * 1000;
@@ -227,7 +217,11 @@ export default function DataMiningPage() {
           setHasRecentChat(recentMessages.length > 0);
         }
       } catch (error) {
-        console.error("Error checking chat history:", error);
+        // Si es error 401, el cliente API ya redirige automáticamente a /login
+        if (error instanceof ApiError && error.status !== 401) {
+          console.error("Error checking chat history:", error);
+        }
+        // Silenciar errores 401 (ya se maneja la redirección)
       }
     };
 
@@ -239,30 +233,28 @@ export default function DataMiningPage() {
 
   const generateReportFromBackend = async () => {
     try {
-      const token = Cookies.get("bai_token");
-      if (!token) {
-        console.error("No token found");
-        return;
-      }
+      // Usar cliente API centralizado (inyección automática de token y headers)
+      const backendReport = await apiPost<{
+        topic?: string;
+        kpis?: { viability?: number; viral?: number };
+        trends?: Array<{ name: string; value: number }>;
+        sentiment?: Array<{ name: string; value: number; color: string }>;
+        demographics?: Array<{ name: string; value: number }>;
+        social?: Array<{ name: string; value: number; color?: string; fill?: string }>;
+        devices?: Array<{ name: string; value: number; color: string }>;
+        geo?: Array<{ name: string; value: number; color: string }>;
+        radar?: Array<{ subject?: string; category?: string; A?: number; B?: number }>;
+        multiLine?: Array<{ month: string; Instagram?: number; TikTok?: number; YouTube?: number }>;
+        hourly?: Array<{ hour: string; value: number }>;
+      }>("/api/data/mining-report", { topic: null }); // El backend extraerá del historial
 
-      const response = await fetch(getMiningReportUrl(), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ topic: null }), // El backend extraerá del historial
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const backendReport = await response.json();
       const dashboardData = convertBackendReportToDashboardData(backendReport);
       setData(dashboardData);
     } catch (error) {
-      console.error("Error generando reporte:", error);
+      // Si es error 401, el cliente API ya redirige automáticamente a /login
+      if (error instanceof ApiError && error.status !== 401) {
+        console.error("Error generando reporte:", error);
+      }
       // Mantener datos iniciales en caso de error
     }
   };

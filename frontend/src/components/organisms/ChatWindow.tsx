@@ -6,7 +6,7 @@ import Cookies from "js-cookie";
 import { X, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/atoms/Button";
-import { getChatApiUrl, getChatHistoryUrl } from "@/lib/api";
+import { apiGet, apiPost, ApiError } from "@/lib/api-client";
 import { useDashboard } from "@/context/DashboardContext";
 import { useChat } from "@/context/ChatContext";
 
@@ -49,34 +49,10 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
     const loadHistory = async () => {
       setIsLoadingHistory(true);
       try {
-        // Get authentication token from cookie
-        const token = Cookies.get("bai_token");
-        
-        if (!token) {
-          // No token, redirect to login
-          router.push("/login");
-          return;
-        }
-
-        const response = await fetch(getChatHistoryUrl(), {
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-          }
-        });
-
-        if (response.status === 401) {
-          // Token is invalid or expired - remove it and redirect to login
-          Cookies.remove("bai_token");
-          router.push("/login");
-          return;
-        }
-
-        if (!response.ok) {
-          throw new Error("Failed to load history");
-        }
-
-        const history = await response.json();
+        // Usar cliente API centralizado con autenticación automática
+        const history = await apiGet<Array<{ role: string; content: string }>>(
+          "/api/chat/history"
+        );
 
         if (history.length === 0) {
           // Only show welcome message if no history exists
@@ -97,6 +73,14 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
         }
       } catch (error) {
         console.error("Error loading chat history:", error);
+        
+        // Manejar error de autenticación
+        if (error instanceof ApiError && error.status === 401) {
+          Cookies.remove("bai_token");
+          router.push("/login");
+          return;
+        }
+        
         // Show welcome message on error
         setMessages([
           {
@@ -145,35 +129,11 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
     setIsLoading(true);
 
     try {
-      // Get authentication token from cookie
-      const token = Cookies.get("bai_token");
-      
-      if (!token) {
-        router.push("/login");
-        return;
-      }
-
-      const response = await fetch(getChatApiUrl(), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ text: messageText })
-      });
-
-      if (response.status === 401) {
-        // Token is invalid or expired - remove it and redirect to login
-        Cookies.remove("bai_token");
-        router.push("/login");
-        return;
-      }
-
-      if (!response.ok) {
-        throw new Error("Failed to get response");
-      }
-
-      const data = await response.json();
+      // Usar cliente API centralizado con autenticación automática
+      const data = await apiPost<{ response: string }>(
+        "/api/chat",
+        { text: messageText }
+      );
       const botResponse = data.response;
       setMessages((prev) => [...prev, { role: "bot", text: botResponse }]);
       
@@ -198,6 +158,13 @@ export function ChatWindow({ isOpen, onClose }: ChatWindowProps) {
         }
       }
     } catch (error) {
+      // Manejar error de autenticación
+      if (error instanceof ApiError && error.status === 401) {
+        Cookies.remove("bai_token");
+        router.push("/login");
+        return;
+      }
+      
       setMessages((prev) => [
         ...prev,
         { role: "bot", text: "Lo siento, estoy teniendo problemas para conectarme. Por favor, inténtalo de nuevo." }

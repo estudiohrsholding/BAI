@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getHealthCheckUrl } from "@/lib/api";
+import { apiPublic } from "@/lib/api-client";
 
 export function SystemStatus() {
   const [isOnline, setIsOnline] = useState(false);
@@ -9,12 +9,9 @@ export function SystemStatus() {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const response = await fetch(getHealthCheckUrl());
-        if (response.ok) {
-          setIsOnline(true);
-        } else {
-          setIsOnline(false);
-        }
+        // Usar cliente API público (sin autenticación)
+        await apiPublic("/health", { throwOnError: false });
+        setIsOnline(true);
       } catch (error) {
         setIsOnline(false);
       }

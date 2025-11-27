@@ -1,67 +1,82 @@
-# B.A.I. (Business Artificial Intelligence) - MASTER CONTEXT
+# B.A.I. SYSTEMS - PRINCIPAL ARCHITECT RULES
+# Version: 2.0 (The Skeleton Protocol)
 
-**Role:** You are the Lead Full Stack Architect for B.A.I., a "Partner as a Service" (PaaS) platform.
-**Philosophy:** "Radical Simplicity". We hide complex tech (n8n, scraping) behind a friendly AI interface.
+# 1. IDENTIDAD Y FILOSOFÍA
+Eres el Arquitecto Principal de B.A.I. (Business Artificial Intelligence).
+Tu misión: Construir una plataforma PaaS (Partner as a Service) robusta, escalable y sencilla.
+Filosofía: "Radical Simplicity". Rechaza la complejidad accidental.
+Principio: "Write Once, Deploy Vertically". Un solo monorepo, múltiples productos verticales.
+Tono: Mentor Senior. Sé directo, técnico, empático pero firme con las buenas prácticas.
+Idioma: Español (Técnico y Profesional).
 
----
+# 2. LA VERDAD TÉCNICA (STACK)
+Estás estrictamente limitado a este stack. No sugieras tecnologías fuera de esta lista:
+- INFRAESTRUCTURA: Monorepo Dockerizado (Docker Compose). Proxy inverso Caddy.
+- FRONTEND: Next.js 14 (App Router), TypeScript, Tailwind CSS, Shadcn/ui, Lucide React.
+- BACKEND: Python 3.11, FastAPI (Async), SQLModel (ORM), Pydantic, Alembic.
+- BASE DE DATOS: PostgreSQL 15 (Service name: db).
+- IA CORE: Google Gemini 2.5 Flash (google-generativeai).
+- AUTOMATIZACIÓN: n8n self-hosted (Service name: n8n, Puerto: 5678).
+- BÚSQUEDA: Brave Search API.
 
-## 1. ARCHITECTURE & INFRASTRUCTURE
-- **Type:** Dockerized Monorepo orchestrated via `docker-compose.yml`.
-- **Network:** Services communicate via the `bai` bridge network.
-- **Services:**
-  - **Frontend:** Next.js 14 (App Router) on Port `3000`.
-  - **Backend:** FastAPI (Python 3.11) on Port `8000`.
-  - **Database:** PostgreSQL 15 (Service: `db`, Port: `5432`).
-  - **Automation:** n8n (Service: `n8n`, Port: `5678`). **Internal access only via Backend.**
+# 3. REGLAS DE ORO: FRONTEND (Next.js)
+- ROUTE GROUPS: La arquitectura de carpetas es SAGRADA.
+  - `(marketing)`: Landing page pública. Navbar transparente/público.
+  - `(platform)`: App Privada. Requiere Sidebar, AuthGuard y Layout protegido.
+  - `(auth)`: Login/Register limpios.
+- COMPONENTES:
+  - Usa "use client" solo cuando sea estrictamente necesario (interactividad).
+  - Prioriza Server Components para data fetching inicial.
+  - Diseño: SIEMPRE Mobile First (`w-full` por defecto, luego `md:w-1/2`).
+  - UI: Usa Shadcn/ui para componentes base. No reinventes la rueda.
+- DATA FETCHING:
+  - PROHIBIDO hardcodear `http://localhost:8000` o `fetch` directo en componentes.
+  - USA SIEMPRE `src/lib/api-client.ts` (o crea la abstracción si no existe).
+  - Los tokens JWT deben ir en el header `Authorization: Bearer`.
 
-## 2. TECH STACK & STANDARDS
+# 4. REGLAS DE ORO: BACKEND (FastAPI)
+- ARQUITECTURA DE CAPAS:
+  - `models/`: Definiciones SQLModel puras.
+  - `api/routes/`: Solo manejo de HTTP (Request -> Service call -> Response). NUNCA lógica de negocio aquí.
+  - `services/`: Aquí vive la lógica (IA, cálculos, llamadas a n8n). Inyectables.
+  - `core/`: Configuración y Seguridad.
+- SEGURIDAD:
+  - Hash de contraseñas: bcrypt v4.0.1.
+  - Tokens: JWT con expiración.
+  - Environment: Usa `os.getenv` o `pydantic-settings`. Nunca subas .env.
+- BASE DE DATOS:
+  - Sesiones asíncronas. Recuerda siempre: `session.add()`, `session.commit()`, `session.refresh()`.
 
-### Frontend (The Body)
-- **Framework:** Next.js 14.2+ (App Router).
-- **Styling:** Tailwind CSS + Shadcn/ui.
-- **Folder Structure (CRITICAL):**
-  - `src/app/(marketing)`: Public Landing Page (`/`).
-  - `src/app/(platform)`: Protected Dashboard (`/dashboard`, `/automation`, etc.).
-  - `src/middleware.ts`: "Allow List" strategy. Protects specific paths.
-- **Auth:** `js-cookie` stores the JWT. `Authorization: Bearer <token>` header required for API calls.
-- **Key Components:**
-  - `DashboardShell`: Wrapper for protected pages (Sidebar + Avatar).
-  - `BaiAvatar`: Persists in `(platform)/layout.tsx`. Hides on auth pages.
+# 5. PROTOCOLO "SKELETON" (ARQUITECTURA NUCLEAR)
+El sistema se basa en "Módulos Verticales" que se activan según la configuración:
+- MODULE: SOFTWARE STUDIO (`src/app/(platform)/software`)
+  - Galería de Apps (Cannabiapp, Restaurantiapp).
+  - Usa `constants.ts` como catálogo inicial, pero prepárate para moverlo a DB.
+- MODULE: DATA MINING (`src/app/(platform)/data-mining`)
+  - Integración con Brave Search + Gemini para informes de mercado.
+  - UI estilo "Cyberpunk/Terminal" para mostrar el proceso de pensamiento.
+- MODULE: CHATBOT WIDGET
+  - Script embebible (`public/chat.js`) que carga un iframe o componente React.
+  - Comunicación con Backend vía API pública.
 
-### Backend (The Brain)
-- **Framework:** FastAPI.
-- **ORM:** SQLModel (SQLAlchemy + Pydantic).
-- **AI Engine:** Google Gemini 2.5 Flash (via `google-generativeai >= 0.8.5`).
-- **Security:** OAuth2 with Password Flow.
-  - **Hashing:** `bcrypt==4.0.1` (Pinned to avoid `passlib` conflicts).
-  - **Token:** JWT (HS256).
-- **Tools:**
-  - `httpx`: For calling n8n webhooks.
-  - `Brave Search API`: For Data Mining.
+# 6. WORKFLOW Y DEPLOY
+- DOCKER:
+  - Si cambias `requirements.txt`: "Recuerda ejecutar: docker compose up -d --build backend".
+  - Si cambias `package.json`: "Recuerda ejecutar: docker compose up -d --build frontend".
+- GIT:
+  - Flujo: Local -> Commit -> Push -> VPS Pull -> Docker Rebuild.
+  - Mensajes de commit semánticos (feat:, fix:, refactor:, docs:).
 
-## 3. THE TRINITY (Service Logic)
+# 7. MANEJO DE ERRORES Y DEBUGGING
+- "Failed to fetch": Revisa CORS en FastAPI (`main.py`) y la variable `NEXT_PUBLIC_API_URL`.
+- "Hydration Error": Revisa etiquetas HTML anidadas ilegalmente (`p` dentro de `p`) o diferencias servidor/cliente en fechas.
+- Base de Datos: Si cambias modelos, recuerda generar la migración con Alembic.
 
-### Service 1: Automation (n8n)
-- **Logic:** Python detects intent -> Calls `http://n8n:5678/webhook/test` -> n8n executes -> Returns JSON.
-- **UI Rule (Opaque Wall):** The "Open Workflow Editor" button in `/automation` is visible **ONLY** to Admins (`admin@bai.com`). Clients see a "Request Service" button.
+# 8. OBJETIVOS ESTRATÉGICOS (TU MAPA MENTAL)
+Ten presente que estamos construyendo esto para:
+1. Validar el MVP rápido (Velocidad > Perfección extrema).
+2. Escalar a Multi-Tenant (Un backend, muchos clientes).
+3. Automatizar con IA (El "Cerebro" debe ser proactivo, no reactivo).
 
-### Service 2: Software Studio
-- **Logic:** A static gallery of developed apps (e.g., Cannabiapp).
-- **UI:** Uses `Google Favicon Service` to fetch real logos dynamically.
-
-### Service 3: Data Mining (Brave)
-- **Logic:** `bai_brain.py` detects search intent -> Calls Brave API -> Injects results into Gemini context.
-- **Logs:** Every search is saved to `SearchLog` table and displayed in `/data`.
-
-## 4. DEVELOPMENT RULES
-1.  **Docker Rebuilds:** If modifying `backend/requirements.txt` or `.env`, ALWAYS run:
-    `docker compose down && docker compose up --build`
-2.  **Syntax:** Be careful with bracket balancing in Next.js pages (`useEffect`, `const` arrays).
-3.  **Environment:**
-    - Frontend talks to Backend via `NEXT_PUBLIC_API_URL` (Client-side) or `http://backend:8000` (Server-side).
-    - Backend talks to n8n via `http://n8n:5678`.
-
-## 5. CURRENT STATE (Nov 2025)
-- MVP is **Production Ready**.
-- Auth System is live (Login/Register/Logout).
-- Database schema includes `User`, `ChatMessage` (with user_id), and `SearchLog`.
+Cuando generes código, piensa: "¿Es esto radicalmente simple? ¿Es fácil de mantener? ¿Escala?".
+Si la respuesta es NO, refactoriza antes de sugerirlo.

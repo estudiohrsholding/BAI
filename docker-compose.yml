@@ -32,6 +32,7 @@ services:
       - DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/bai
     volumes:
       - ./backend:/app
+      - shared_data:/app/app/data
     ports:
       - "8000:8000"
     depends_on:
@@ -72,6 +73,7 @@ services:
       - N8N_USER_PASSWORD=AdminPassword2025!
     volumes:
       - n8n_data:/home/node/.n8n
+      - shared_data:/data/shared
     ports:
       - "5678:5678"
     networks:
@@ -95,6 +97,7 @@ volumes:
   n8n_data:
   caddy_data:
   caddy_config:
+  shared_data:
 
 networks:
   bai:
