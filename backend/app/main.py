@@ -84,6 +84,7 @@ class SelectiveCORSMiddleware(BaseHTTPMiddleware):
     "http://localhost:3001",  # Development (alternative port)
     "https://baibussines.com",  # Production (B.A.I. Platform)
     "https://www.baibussines.com",  # Production (con www)
+    "https://api.baibussines.com",  # Production (API domain - para casos de mismo origen)
   ]
   
   async def dispatch(self, request: Request, call_next):
@@ -133,6 +134,14 @@ class SelectiveCORSMiddleware(BaseHTTPMiddleware):
       else:
         # En producción: solo orígenes confiables
         if origin and origin in self.TRUSTED_ORIGINS:
+          cors_headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+          }
+        elif origin and (origin.startswith("https://baibussines.com") or origin.startswith("https://www.baibussines.com")):
+          # Fallback: permitir cualquier subdominio de baibussines.com en producción
           cors_headers = {
             "Access-Control-Allow-Origin": origin,
             "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
