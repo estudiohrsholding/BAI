@@ -361,3 +361,13 @@ Proprietary - B.A.I. Systems
 
 **Última Actualización:** 2025-01-27  
 **Versión:** 2.0 (The Skeleton Protocol)
+
+
+INSERT INTO "user" (email, hashed_password, is_active, plan_tier, subscription_status)
+VALUES (
+    'joder@gmail.com', 
+    'EL_HASH_GENERADO_EN_EL_PASO_1', 
+    TRUE, 
+    'MOTOR', 
+    'ACTIVE'
+);
