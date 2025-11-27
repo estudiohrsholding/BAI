@@ -752,6 +752,7 @@ export default function ConfiguracionPage() {
                           <CampaignStatusTracker
                             campaignId={campaign.id}
                             campaignMonth={campaign.month}
+                            campaign={campaign}
                             onStatusUpdate={(status) => {
                               // Actualizar estado local si el job cambió
                               if (status.campaign_status !== campaign.status) {

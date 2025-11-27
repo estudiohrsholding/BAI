@@ -8,17 +8,21 @@ import {
   XCircle,
   Loader2,
   Sparkles,
+  Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   getCampaignStatus,
   CampaignStatusResponse,
   ApiError,
+  ContentCampaignResponse,
 } from "@/lib/api-client";
+import { CampaignResultViewer } from "./CampaignResultViewer";
 
 interface CampaignStatusTrackerProps {
   campaignId: number;
   campaignMonth: string;
+  campaign?: ContentCampaignResponse; // Campaña completa para mostrar resultados
   onStatusUpdate?: (status: CampaignStatusResponse) => void;
   className?: string;
 }
@@ -34,12 +38,14 @@ interface CampaignStatusTrackerProps {
 export function CampaignStatusTracker({
   campaignId,
   campaignMonth,
+  campaign,
   onStatusUpdate,
   className,
 }: CampaignStatusTrackerProps) {
   const [jobStatus, setJobStatus] = useState<CampaignStatusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isViewerOpen, setIsViewerOpen] = useState(false);
 
   const fetchJobStatus = async () => {
     try {
@@ -140,22 +146,37 @@ export function CampaignStatusTracker({
                   jobStatus.campaign_status === "in_progress" ||
                   jobStatus.job_status === "queued";
 
+  const isCompleted = jobStatus.job_status === "complete" || 
+                     jobStatus.campaign_status === "completed";
+
   return (
-    <div className={cn("rounded-md border border-violet-500/30 bg-violet-500/5 p-3", className)}>
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          {getStatusIcon()}
-          <span className="text-xs font-medium text-slate-300">Estado de Generación</span>
+    <>
+      <div className={cn("rounded-md border border-violet-500/30 bg-violet-500/5 p-3", className)}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            {getStatusIcon()}
+            <span className="text-xs font-medium text-slate-300">Estado de Generación</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span
+              className={cn(
+                "rounded-full border px-2 py-0.5 text-xs font-medium",
+                getStatusColor()
+              )}
+            >
+              {getStatusLabel()}
+            </span>
+            {isCompleted && campaign && campaign.generated_content && (
+              <button
+                onClick={() => setIsViewerOpen(true)}
+                className="flex items-center gap-1.5 rounded-md border border-violet-500/50 bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300 hover:bg-violet-500/20 transition-colors"
+              >
+                <Eye className="h-3 w-3" />
+                Ver Contenido
+              </button>
+            )}
+          </div>
         </div>
-        <span
-          className={cn(
-            "rounded-full border px-2 py-0.5 text-xs font-medium",
-            getStatusColor()
-          )}
-        >
-          {getStatusLabel()}
-        </span>
-      </div>
 
       {/* Progress Bar */}
       {isActive && jobStatus.progress !== null && (
@@ -203,7 +224,17 @@ export function CampaignStatusTracker({
           </div>
         )}
       </div>
-    </div>
+      </div>
+
+      {/* Result Viewer Modal */}
+      {campaign && (
+        <CampaignResultViewer
+          campaign={campaign}
+          open={isViewerOpen}
+          onOpenChange={setIsViewerOpen}
+        />
+      )}
+    </>
   );
 }
 
