@@ -62,7 +62,7 @@ class WorkerSettings:
     from app.workers.tasks.email_reports import send_email_report
     from app.workers.tasks.data_mining import process_data_mining
     from app.workers.tasks.analytics import track_feature_use
-    from app.workers.tasks.content_tasks import generate_influencer_content
+    from app.workers.tasks.content_tasks import generate_influencer_content, schedule_monthly_content
     from app.workers.tasks.extraction_tasks import launch_deep_extraction
     
     functions = [
@@ -73,6 +73,7 @@ class WorkerSettings:
         track_feature_use,
         generate_influencer_content,
         launch_deep_extraction,
+        schedule_monthly_content,
     ]
     
     # ============================================

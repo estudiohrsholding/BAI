@@ -97,13 +97,13 @@ export default function DashboardPage() {
     return colorMap[plan] || "slate";
   };
 
-  const getWorkerStatusColor = (status: string) => {
-    const colorMap: Record<string, string> = {
+  const getWorkerStatusColor = (status: string): "emerald" | "amber" | "red" | "violet" | "blue" => {
+    const colorMap: Record<string, "emerald" | "amber" | "red" | "violet" | "blue"> = {
       healthy: "emerald",
       degraded: "amber",
       down: "red",
     };
-    return colorMap[status] || "slate";
+    return colorMap[status] || "red";
   };
 
   const getFeatureDisplayName = (key: string) => {

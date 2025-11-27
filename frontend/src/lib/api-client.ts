@@ -64,7 +64,6 @@ export interface SystemHealth {
  */
 export async function getSystemHealth(): Promise<SystemHealth> {
   return apiPublic<SystemHealth>("/api/v1/health", {
-    requireAuth: false,
     throwOnError: false
   });
 }
@@ -305,6 +304,112 @@ export async function getExtractionQueryResults(
 }
 
 /**
+ * Content Planner API Functions
+ */
+
+export interface ContentCampaignCreateRequest {
+  month: string; // Format: "YYYY-MM"
+  tone_of_voice: string;
+  themes: string[];
+  target_platforms: string[];
+  campaign_metadata?: Record<string, any>;
+  scheduled_at?: string | null;
+}
+
+export interface ContentCampaignResponse {
+  id: number;
+  user_id: number;
+  month: string;
+  tone_of_voice: string;
+  themes: string[];
+  target_platforms: string[];
+  status: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+  generated_content: Record<string, any> | null;
+  error_message: string | null;
+  arq_job_id: string | null;
+  scheduled_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  campaign_metadata: Record<string, any> | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface LaunchCampaignResponse {
+  campaign_id: number;
+  status: string;
+  message: string;
+  estimated_completion: string | null;
+}
+
+export interface ContentCampaignListResponse {
+  campaigns: ContentCampaignResponse[];
+  total: number;
+}
+
+/**
+ * Lanzar una campaña de contenido mensual (4 Posts + 1 Reel)
+ * 
+ * @param data - Datos de la campaña mensual
+ * @returns Respuesta con ID de la campaña creada
+ * @throws ApiError si falla la petición
+ */
+export async function launchMonthlyCampaign(
+  data: ContentCampaignCreateRequest
+): Promise<LaunchCampaignResponse> {
+  return apiPost<LaunchCampaignResponse>("/api/v1/content-planner/launch-monthly-campaign", data);
+}
+
+/**
+ * Obtener lista de campañas mensuales del usuario
+ * 
+ * @param limit - Número máximo de resultados
+ * @param offset - Offset para paginación
+ * @returns Lista de campañas
+ * @throws ApiError si falla la petición
+ */
+export async function getMonthlyCampaigns(
+  limit: number = 50,
+  offset: number = 0
+): Promise<ContentCampaignListResponse> {
+  return apiGet<ContentCampaignListResponse>(
+    `/api/v1/content-planner/campaigns?limit=${limit}&offset=${offset}`
+  );
+}
+
+/**
+ * Obtener una campaña mensual específica
+ * 
+ * @param campaignId - ID de la campaña
+ * @returns Detalles de la campaña
+ * @throws ApiError si falla la petición
+ */
+export async function getMonthlyCampaign(campaignId: number): Promise<ContentCampaignResponse> {
+  return apiGet<ContentCampaignResponse>(`/api/v1/content-planner/campaigns/${campaignId}`);
+}
+
+export interface CampaignStatusResponse {
+  campaign_id: number;
+  job_id: string | null;
+  job_status: "queued" | "in_progress" | "complete" | "failed" | null;
+  campaign_status: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+  progress: number | null;
+  result: Record<string, any> | null;
+  error: string | null;
+}
+
+/**
+ * Obtener el estado del job de Arq para una campaña mensual
+ * 
+ * @param campaignId - ID de la campaña
+ * @returns Estado del job y de la campaña
+ * @throws ApiError si falla la petición
+ */
+export async function getCampaignStatus(campaignId: number): Promise<CampaignStatusResponse> {
+  return apiGet<CampaignStatusResponse>(`/api/v1/content-planner/campaigns/${campaignId}/status`);
+}
+
+/**
  * Opciones para peticiones autenticadas
  */
 export interface FetchOptions extends RequestInit {
@@ -423,9 +528,9 @@ export async function fetchWithAuth<T = unknown>(
     : `${baseUrl}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
 
   // Preparar headers
-  const requestHeaders: HeadersInit = {
+  const requestHeaders: Record<string, string> = {
     "Content-Type": "application/json",
-    ...headers,
+    ...(headers as Record<string, string>),
   };
 
   // Inyectar token de autenticación si es requerido

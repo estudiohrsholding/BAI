@@ -58,6 +58,7 @@ export function ExtractionResultViewer({
         // Expandir secciones principales por defecto
         const defaultSections = new Set<string>();
         if (data.results.summary) defaultSections.add("summary");
+        if (data.results.kpis) defaultSections.add("kpis");
         if (data.results.sources) defaultSections.add("sources");
         if (data.results.insights) defaultSections.add("insights");
         setExpandedSections(defaultSections);
@@ -274,15 +275,49 @@ export function ExtractionResultViewer({
         </Section>
       )}
 
-      {/* Metrics Section */}
-      {data.metrics && (
+      {/* KPIs Section */}
+      {data.kpis && typeof data.kpis === 'object' && Object.keys(data.kpis).length > 0 && (
         <Section
-          title="Métricas"
+          title="KPIs Clave"
+          icon={TrendingUp}
+          isExpanded={expandedSections.has("kpis")}
+          onToggle={() => toggleSection("kpis")}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Object.entries(data.kpis).map(([key, value]: [string, any]) => (
+              <div
+                key={key}
+                className="rounded-lg border border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-4"
+              >
+                <p className="text-xs text-slate-400 mb-2 uppercase tracking-wide">
+                  {key.replace(/_/g, " ")}
+                </p>
+                <p className="text-3xl font-bold text-white mb-1">
+                  {typeof value === "number" ? value.toLocaleString() : String(value)}
+                </p>
+                {typeof value === "number" && (key.includes("viability") || key.includes("score")) && (
+                  <div className="mt-2 h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-violet-500 to-fuchsia-500 transition-all duration-500"
+                      style={{ width: `${Math.min(value, 100)}%` }}
+                    />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* Metrics Section */}
+      {data.metrics && typeof data.metrics === 'object' && Object.keys(data.metrics).length > 0 && (
+        <Section
+          title="Métricas Detalladas"
           icon={TrendingUp}
           isExpanded={expandedSections.has("metrics")}
           onToggle={() => toggleSection("metrics")}
         >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {Object.entries(data.metrics).map(([key, value]) => (
               <div
                 key={key}

@@ -117,12 +117,13 @@ export function ExtractionStatusList({
   }, [queries]);
 
   const getStatusIcon = (query: ExtractionQueryResponse, jobStatus?: ExtractionQueryStatusResponse) => {
-    const status = jobStatus?.job_status || jobStatus?.query_status || query.status;
+    // Priorizar job_status sobre query_status para mostrar el estado más actualizado
+    const status = (jobStatus?.job_status ?? jobStatus?.query_status) || query.status;
     
     if (status === "completed" || status === "complete") {
       return <CheckCircle2 className="h-4 w-4 text-emerald-400" />;
     }
-    if (status === "in_progress" || status === "running") {
+    if (status === "in_progress") {
       return <Activity className="h-4 w-4 text-amber-400 animate-pulse" />;
     }
     if (status === "failed") {
@@ -132,30 +133,28 @@ export function ExtractionStatusList({
   };
 
   const getStatusLabel = (query: ExtractionQueryResponse, jobStatus?: ExtractionQueryStatusResponse) => {
-    const status = jobStatus?.job_status || jobStatus?.query_status || query.status;
+    const status = (jobStatus?.job_status ?? jobStatus?.query_status) || query.status;
     
     const labels: Record<string, string> = {
       queued: "En Cola",
       pending: "Pendiente",
       in_progress: "En Progreso",
-      running: "En Progreso",
       complete: "Completado",
       completed: "Completado",
       failed: "Fallido",
       cancelled: "Cancelada",
     };
     
-    return labels[status] || status;
+    return labels[status] || String(status);
   };
 
   const getStatusColor = (query: ExtractionQueryResponse, jobStatus?: ExtractionQueryStatusResponse) => {
-    const status = jobStatus?.job_status || jobStatus?.query_status || query.status;
+    const status = (jobStatus?.job_status ?? jobStatus?.query_status) || query.status;
     
     const colors: Record<string, string> = {
       queued: "text-slate-400 bg-slate-500/20 border-slate-500/30",
       pending: "text-slate-400 bg-slate-500/20 border-slate-500/30",
       in_progress: "text-amber-400 bg-amber-500/20 border-amber-500/30",
-      running: "text-amber-400 bg-amber-500/20 border-amber-500/30",
       complete: "text-emerald-400 bg-emerald-500/20 border-emerald-500/30",
       completed: "text-emerald-400 bg-emerald-500/20 border-emerald-500/30",
       failed: "text-red-400 bg-red-500/20 border-red-500/30",
@@ -197,12 +196,14 @@ export function ExtractionStatusList({
     <div className={cn("space-y-3", className)}>
       {queries.map((query) => {
         const jobStatus = statusMap.get(query.id);
+        // Determinar si la query está activa (pendiente o en progreso)
+        // El job_status puede ser "queued" | "in_progress" | "complete" | "failed" | null
+        // El query.status puede ser "pending" | "in_progress" | "completed" | "failed" | "cancelled"
         const isActive =
           query.status === "pending" ||
           query.status === "in_progress" ||
           jobStatus?.job_status === "queued" ||
-          jobStatus?.job_status === "in_progress" ||
-          jobStatus?.job_status === "running";
+          jobStatus?.job_status === "in_progress";
 
         return (
           <div
@@ -230,7 +231,7 @@ export function ExtractionStatusList({
             </div>
 
             {/* Progress Bar */}
-            {isActive && jobStatus?.progress !== null && (
+            {isActive && jobStatus && jobStatus.progress !== null && (
               <div className="mb-3">
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-xs text-slate-400">Progreso</span>

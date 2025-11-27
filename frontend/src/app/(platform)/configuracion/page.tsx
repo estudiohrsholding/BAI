@@ -22,12 +22,17 @@ import {
   getCampaigns,
   CampaignCreateRequest,
   CampaignResponse,
+  launchMonthlyCampaign,
+  getMonthlyCampaigns,
+  ContentCampaignCreateRequest,
+  ContentCampaignResponse,
 } from "@/lib/api-client";
 import { FeatureGate, PlanTier } from "@/components/common/FeatureGate";
 import { PlanIndicator } from "@/components/common/PlanIndicator";
 import { Button } from "@/components/atoms/Button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
 import { CampaignStatusList } from "@/components/content_creator/CampaignStatusList";
+import { CampaignStatusTracker } from "@/components/content_planner/CampaignStatusTracker";
 
 interface User {
   id: number;
@@ -55,6 +60,15 @@ export default function ConfiguracionPage() {
   const [contentRules, setContentRules] = useState("");
   const [publishingLimits, setPublishingLimits] = useState("5");
   const [miningFrequency, setMiningFrequency] = useState("monthly");
+
+  // Form state for CEREBRO (Content Planner - Monthly Campaign)
+  const [campaignMonth, setCampaignMonth] = useState("");
+  const [campaignTone, setCampaignTone] = useState("profesional");
+  const [campaignThemes, setCampaignThemes] = useState("");
+  const [selectedCampaignPlatforms, setSelectedCampaignPlatforms] = useState<string[]>([]);
+  const [isLaunchingCampaign, setIsLaunchingCampaign] = useState(false);
+  const [monthlyCampaigns, setMonthlyCampaigns] = useState<any[]>([]);
+  const [isLoadingMonthlyCampaigns, setIsLoadingMonthlyCampaigns] = useState(false);
 
   // Form state for PARTNER (Content Creator)
   const [campaignName, setCampaignName] = useState("");
@@ -93,6 +107,16 @@ export default function ConfiguracionPage() {
       loadCampaigns();
       // Auto-refresh cada 10 segundos para actualizar estados
       const interval = setInterval(loadCampaigns, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [currentPlan, user]);
+
+  // Cargar campañas mensuales si el usuario es CEREBRO
+  useEffect(() => {
+    if (currentPlan === "CEREBRO" && user) {
+      loadMonthlyCampaigns();
+      // Auto-refresh cada 10 segundos para actualizar estados
+      const interval = setInterval(loadMonthlyCampaigns, 10000);
       return () => clearInterval(interval);
     }
   }, [currentPlan, user]);
@@ -184,6 +208,84 @@ export default function ConfiguracionPage() {
         ? prev.filter((p) => p !== platform)
         : [...prev, platform]
     );
+  };
+
+  const toggleCampaignPlatform = (platform: string) => {
+    setSelectedCampaignPlatforms((prev) =>
+      prev.includes(platform)
+        ? prev.filter((p) => p !== platform)
+        : [...prev, platform]
+    );
+  };
+
+  const loadMonthlyCampaigns = async () => {
+    if (currentPlan !== "CEREBRO") return;
+    
+    try {
+      setIsLoadingMonthlyCampaigns(true);
+      const response = await getMonthlyCampaigns(50, 0);
+      setMonthlyCampaigns(response.campaigns);
+    } catch (error) {
+      if (error instanceof ApiError && error.status !== 401) {
+        console.error("Error cargando campañas mensuales:", error);
+      }
+    } finally {
+      setIsLoadingMonthlyCampaigns(false);
+    }
+  };
+
+  const handleLaunchMonthlyCampaign = async () => {
+    if (!campaignMonth || !campaignThemes.trim() || selectedCampaignPlatforms.length === 0) {
+      alert("Por favor completa todos los campos requeridos");
+      return;
+    }
+
+    // Validar formato de mes (YYYY-MM)
+    const monthRegex = /^\d{4}-\d{2}$/;
+    if (!monthRegex.test(campaignMonth)) {
+      alert("El formato del mes debe ser YYYY-MM (ej: 2025-02)");
+      return;
+    }
+
+    try {
+      setIsLaunchingCampaign(true);
+      const campaignData: ContentCampaignCreateRequest = {
+        month: campaignMonth,
+        tone_of_voice: campaignTone,
+        themes: campaignThemes.split(",").map((t) => t.trim()).filter((t) => t.length > 0),
+        target_platforms: selectedCampaignPlatforms,
+        campaign_metadata: {
+          content_rules: contentRules,
+          publishing_limits: parseInt(publishingLimits) || 5,
+        },
+        scheduled_at: null, // Por ahora, iniciar inmediatamente
+      };
+
+      await launchMonthlyCampaign(campaignData);
+      
+      // Limpiar formulario
+      setCampaignMonth("");
+      setCampaignTone("profesional");
+      setCampaignThemes("");
+      setSelectedCampaignPlatforms([]);
+      
+      // Recargar lista de campañas
+      await loadMonthlyCampaigns();
+      
+      alert("Campaña mensual lanzada exitosamente. Se generarán 4 Posts + 1 Reel en segundo plano.");
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 403) {
+          alert("Esta funcionalidad requiere el plan CEREBRO. Actualiza tu suscripción.");
+        } else {
+          alert(`Error al lanzar campaña: ${error.message}`);
+        }
+      } else {
+        alert("Error inesperado al lanzar la campaña");
+      }
+    } finally {
+      setIsLaunchingCampaign(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -464,6 +566,243 @@ export default function ConfiguracionPage() {
                   Guardar Estrategia
                 </Button>
               </div>
+            </div>
+
+            {/* Planificador de Contenido Mensual */}
+            <div className="mt-8 rounded-xl border border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-6 shadow-lg backdrop-blur">
+              <div className="mb-4 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-violet-400" />
+                <h2 className="text-lg font-semibold text-white">Planificador de Contenido Mensual</h2>
+                <span className="rounded-full bg-violet-500/20 border border-violet-500/30 px-2 py-1 text-xs font-medium text-violet-400">
+                  Plan Cerebro
+                </span>
+              </div>
+              <p className="mb-6 text-sm text-slate-400">
+                Programa tu contenido mensual: 4 Posts + 1 Reel generados automáticamente por IA.
+              </p>
+
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Mes de la Campaña *
+                    </label>
+                    <input
+                      type="text"
+                      value={campaignMonth}
+                      onChange={(e) => setCampaignMonth(e.target.value)}
+                      placeholder="2025-02"
+                      pattern="\d{4}-\d{2}"
+                      className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Formato: YYYY-MM (ej: 2025-02 para febrero 2025)
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Tono de Voz *
+                    </label>
+                    <select
+                      value={campaignTone}
+                      onChange={(e) => setCampaignTone(e.target.value)}
+                      className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                    >
+                      <option value="profesional">Profesional</option>
+                      <option value="amigable">Amigable</option>
+                      <option value="técnico">Técnico</option>
+                      <option value="creativo">Creativo</option>
+                      <option value="empresarial">Empresarial</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Temas o Keywords *
+                  </label>
+                  <input
+                    type="text"
+                    value={campaignThemes}
+                    onChange={(e) => setCampaignThemes(e.target.value)}
+                    placeholder="IA, Marketing Digital, Innovación (separados por comas)"
+                    className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Separa los temas con comas. Se usarán para generar el contenido y como hashtags.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Plataformas de Destino *
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {["Instagram", "Facebook", "LinkedIn", "Twitter"].map((platform) => (
+                      <button
+                        key={platform}
+                        type="button"
+                        onClick={() => toggleCampaignPlatform(platform)}
+                        className={cn(
+                          "rounded-lg border px-4 py-2 text-sm font-medium transition-all",
+                          selectedCampaignPlatforms.includes(platform)
+                            ? "border-violet-500 bg-violet-500/20 text-violet-400"
+                            : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600"
+                        )}
+                      >
+                        {platform}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-slate-500">
+                    Selecciona al menos una plataforma donde se publicará el contenido
+                  </p>
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="lg"
+                  onClick={handleLaunchMonthlyCampaign}
+                  disabled={isLaunchingCampaign || !campaignMonth || !campaignThemes.trim() || selectedCampaignPlatforms.length === 0}
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-violet-500 to-fuchsia-500 hover:from-violet-600 hover:to-fuchsia-600"
+                >
+                  {isLaunchingCampaign ? (
+                    <>
+                      <Activity className="h-4 w-4 animate-spin" />
+                      Lanzando Campaña...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      Lanzar Campaña Mensual (4 Posts + 1 Reel)
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* Lista de Campañas Mensuales */}
+            <div className="mt-6 rounded-xl border border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-6 shadow-lg backdrop-blur">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-violet-400" />
+                  <h2 className="text-lg font-semibold text-white">Mis Campañas Mensuales</h2>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadMonthlyCampaigns}
+                  disabled={isLoadingMonthlyCampaigns}
+                >
+                  {isLoadingMonthlyCampaigns ? "Cargando..." : "Actualizar"}
+                </Button>
+              </div>
+
+              {isLoadingMonthlyCampaigns && monthlyCampaigns.length === 0 ? (
+                <div className="text-center py-8">
+                  <Activity className="h-8 w-8 animate-spin text-violet-400 mx-auto mb-2" />
+                  <p className="text-sm text-slate-400">Cargando campañas...</p>
+                </div>
+              ) : monthlyCampaigns.length === 0 ? (
+                <div className="text-center py-8">
+                  <Sparkles className="h-12 w-12 text-violet-400/50 mx-auto mb-4" />
+                  <p className="text-sm text-slate-400">
+                    No tienes campañas mensuales aún. Lanza tu primera campaña arriba.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {monthlyCampaigns.map((campaign) => (
+                    <div
+                      key={campaign.id}
+                      className="rounded-lg border border-slate-800 bg-slate-900/50 p-4 hover:bg-slate-900/70 transition-colors"
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-base font-semibold text-white">
+                              Campaña {campaign.month}
+                            </h3>
+                            <span
+                              className={cn(
+                                "rounded-full border px-2 py-0.5 text-xs font-medium",
+                                getStatusColor(campaign.status)
+                              )}
+                            >
+                              {getStatusLabel(campaign.status)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-400">
+                            Tono: <span className="text-slate-300">{campaign.tone_of_voice}</span> | 
+                            Temas: <span className="text-slate-300">{campaign.themes.join(", ")}</span>
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
+                        <span>
+                          Plataformas: {campaign.target_platforms.join(", ")}
+                        </span>
+                      </div>
+
+                      {/* Status Tracker Component (Polling cada 5 segundos) */}
+                      {campaign.arq_job_id && (
+                        <div className="mb-3">
+                          <CampaignStatusTracker
+                            campaignId={campaign.id}
+                            campaignMonth={campaign.month}
+                            onStatusUpdate={(status) => {
+                              // Actualizar estado local si el job cambió
+                              if (status.campaign_status !== campaign.status) {
+                                // Recargar lista para sincronizar con DB
+                                loadMonthlyCampaigns();
+                              }
+                            }}
+                          />
+                        </div>
+                      )}
+
+                      {campaign.status === "completed" && campaign.generated_content && (
+                        <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 mb-3">
+                          <p className="text-xs font-medium text-emerald-400 mb-2">
+                            ✓ Contenido Generado
+                          </p>
+                          <div className="space-y-1 text-xs text-slate-300">
+                            <div>
+                              <span className="text-slate-400">Posts:</span>{" "}
+                              {campaign.generated_content.posts?.length || 0} piezas
+                            </div>
+                            <div>
+                              <span className="text-slate-400">Reel:</span>{" "}
+                              {campaign.generated_content.reel ? "1 pieza" : "0 piezas"}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {campaign.error_message && (
+                        <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3">
+                          <p className="text-xs font-medium text-red-400">
+                            Error: {campaign.error_message}
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between text-xs text-slate-500">
+                        <span>
+                          Creada: {new Date(campaign.created_at).toLocaleDateString("es-ES")}
+                        </span>
+                        {campaign.completed_at && (
+                          <span>
+                            Completada: {new Date(campaign.completed_at).toLocaleDateString("es-ES")}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </FeatureGate>
         </TabsContent>
