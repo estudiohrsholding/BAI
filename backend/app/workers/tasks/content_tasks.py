@@ -8,6 +8,7 @@ Simula llamadas a APIs externas (DALL-E 3, HeyGen, etc.) con tiempos de procesam
 from typing import Dict, Any
 from datetime import datetime, timedelta
 import asyncio
+import httpx
 
 from sqlmodel import select
 
@@ -16,6 +17,7 @@ from app.modules.content_creator.models import CampaignStatus, Campaign
 from app.modules.content_planner.service import ContentPlannerService
 from app.modules.content_planner.models import CampaignStatus as PlannerCampaignStatus, ContentCampaign
 from app.infrastructure.db.session import get_session
+from app.core.config import settings
 
 
 async def generate_influencer_content(
@@ -138,23 +140,23 @@ async def schedule_monthly_content(
     campaign_id: int
 ) -> Dict[str, Any]:
     """
-    Tarea asíncrona para generar contenido mensual (4 Posts + 1 Reel).
+    Tarea asíncrona para despachar generación de contenido mensual a n8n.
     
-    Esta tarea simula el proceso completo de generación de contenido mensual:
-    1. Generación de Post 1 (texto + imagen)
-    2. Generación de Post 2 (texto + imagen)
-    3. Generación de Post 3 (texto + imagen)
-    4. Generación de Post 4 (texto + imagen)
-    5. Generación de Reel (texto + video corto)
+    Esta tarea:
+    1. Obtiene la campaña de la base de datos
+    2. Construye el payload con los datos necesarios
+    3. Envía una petición POST a n8n con el webhook de generación
+    4. Actualiza el estado a PROCESSING_REMOTE (esperando callback de n8n)
     
-    Tiempo estimado: 15 segundos por pieza = 75 segundos total.
+    **IMPORTANTE:** Esta tarea NO genera el contenido directamente.
+    El contenido será generado por n8n y enviado de vuelta vía callback.
     
     Args:
         ctx: Contexto del worker (Arq)
         campaign_id: ID de la campaña mensual a procesar
     
     Returns:
-        dict con resultado del procesamiento
+        dict con resultado del despacho a n8n
     """
     try:
         # Obtener sesión de base de datos
@@ -173,88 +175,68 @@ async def schedule_monthly_content(
                     "campaign_id": campaign_id
                 }
             
-            # Actualizar estado a IN_PROGRESS
+            # Verificar que n8n webhook esté configurado
+            if not settings.N8N_GENERATION_WEBHOOK_URL:
+                raise ValueError(
+                    "N8N_GENERATION_WEBHOOK_URL no está configurado. "
+                    "Por favor, configura la URL del webhook de n8n en las variables de entorno."
+                )
+            
+            # Construir callback URL (donde n8n enviará los resultados)
+            callback_url = f"{settings.DOMAIN}/api/v1/content-planner/webhook/callback"
+            
+            # Construir payload para n8n
+            # Nota: El payload incluye 'topic' como alias de 'themes' para compatibilidad con n8n
+            payload = {
+                "campaign_id": campaign_id,
+                "topic": ", ".join(campaign.themes),  # Temas como string para n8n
+                "tone": campaign.tone_of_voice,  # Alias 'tone' para n8n
+                "platform": campaign.target_platforms[0] if campaign.target_platforms else "Instagram",  # Plataforma principal
+                "platforms": campaign.target_platforms,  # Todas las plataformas
+                "month": campaign.month,
+                "themes": campaign.themes,
+                "tone_of_voice": campaign.tone_of_voice,
+                "callback_url": callback_url,
+                "campaign_metadata": campaign.campaign_metadata or {}
+            }
+            
+            # Actualizar estado a IN_PROGRESS antes de enviar a n8n
             service.update_campaign_status(
                 campaign_id=campaign_id,
                 status=PlannerCampaignStatus.IN_PROGRESS,
                 session=session
             )
             
-            # Generar contenido: 4 Posts + 1 Reel
-            posts = []
-            reel = None
-            
-            # Generar 4 Posts (cada uno tarda ~15 segundos)
-            for i in range(1, 5):
-                await asyncio.sleep(15)  # Simular tiempo de generación
+            # Enviar petición a n8n
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(
+                    settings.N8N_GENERATION_WEBHOOK_URL,
+                    json=payload,
+                    headers={
+                        "Content-Type": "application/json",
+                        "User-Agent": "B.A.I.-Platform/1.0"
+                    }
+                )
                 
-                post = {
-                    "id": f"post_{i}",
-                    "type": "post",
-                    "title": f"Post {i} - {campaign.month}",
-                    "text": f"Contenido generado para {campaign.month} con tono {campaign.tone_of_voice}. Temas: {', '.join(campaign.themes[:3])}.",
-                    "image_url": f"https://cdn.example.com/content/{campaign_id}/post_{i}.jpg",
-                    "hashtags": campaign.themes[:5],  # Usar temas como hashtags
-                    "platforms": campaign.target_platforms,
-                    "scheduled_for": None,  # Se puede programar después
-                    "status": "ready",
-                    "generated_at": datetime.utcnow().isoformat()
-                }
-                posts.append(post)
-            
-            # Generar 1 Reel (tarda ~15 segundos)
-            await asyncio.sleep(15)
-            
-            reel = {
-                "id": "reel_1",
-                "type": "reel",
-                "title": f"Reel - {campaign.month}",
-                "text": f"Reel generado para {campaign.month} con tono {campaign.tone_of_voice}.",
-                "video_url": f"https://cdn.example.com/content/{campaign_id}/reel_1.mp4",
-                "thumbnail_url": f"https://cdn.example.com/content/{campaign_id}/reel_1_thumb.jpg",
-                "duration_seconds": 30,
-                "hashtags": campaign.themes[:5],
-                "platforms": campaign.target_platforms,
-                "scheduled_for": None,
-                "status": "ready",
-                "generated_at": datetime.utcnow().isoformat()
-            }
-            
-            # Estructurar contenido generado
-            generated_content = {
-                "month": campaign.month,
-                "posts": posts,
-                "reel": reel,
-                "total_pieces": 5,  # 4 Posts + 1 Reel
-                "tone_of_voice": campaign.tone_of_voice,
-                "themes": campaign.themes,
-                "target_platforms": campaign.target_platforms,
-                "generated_at": datetime.utcnow().isoformat(),
-                "estimated_publishing_schedule": {
-                    "post_1": (datetime.utcnow() + timedelta(days=1)).isoformat(),
-                    "post_2": (datetime.utcnow() + timedelta(days=8)).isoformat(),
-                    "post_3": (datetime.utcnow() + timedelta(days=15)).isoformat(),
-                    "post_4": (datetime.utcnow() + timedelta(days=22)).isoformat(),
-                    "reel": (datetime.utcnow() + timedelta(days=10)).isoformat(),
-                }
-            }
-            
-            # Actualizar estado a COMPLETED
-            service.update_campaign_status(
-                campaign_id=campaign_id,
-                status=PlannerCampaignStatus.COMPLETED,
-                session=session,
-                generated_content=generated_content
-            )
+                # Log de respuesta de n8n
+                print(f"[n8n Dispatch] Campaign {campaign_id}: n8n responded with status {response.status_code}")
+                
+                # Verificar respuesta de n8n
+                if response.status_code not in [200, 201, 202]:
+                    raise ValueError(
+                        f"n8n webhook retornó status {response.status_code}: {response.text}"
+                    )
+                
+                # IMPORTANTE: El estado permanece 'IN_PROGRESS' después de enviar a n8n
+                # El callback de n8n cambiará el estado a 'COMPLETED' cuando llegue el contenido
             
             return {
                 "success": True,
                 "campaign_id": campaign_id,
                 "month": campaign.month,
-                "posts_generated": len(posts),
-                "reel_generated": 1,
-                "total_pieces": 5,
-                "generated_at": datetime.utcnow().isoformat()
+                "n8n_response_status": response.status_code,
+                "message": "Campaña despachada a n8n. Esperando callback con contenido generado.",
+                "dispatched_at": datetime.utcnow().isoformat()
             }
     
     except Exception as e:

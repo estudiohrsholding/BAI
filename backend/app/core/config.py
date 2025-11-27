@@ -53,6 +53,10 @@ class Settings(BaseSettings):
   REDIS_PASSWORD: str | None = None
   REDIS_DB: int = 0
   
+  # n8n Integration Configuration
+  N8N_GENERATION_WEBHOOK_URL: str | None = None  # URL del webhook de n8n para generación de contenido
+  INTERNAL_WEBHOOK_SECRET: str | None = None  # Secret para validar callbacks de n8n
+  
   # Observability
   ENVIRONMENT: str = "development"
   APP_VERSION: str = "1.0.0"

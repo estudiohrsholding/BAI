@@ -5,7 +5,7 @@ Define los endpoints HTTP para el módulo Content Planner.
 Solo maneja HTTP (request/response), delega la lógica a ContentPlannerService.
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi import APIRouter, HTTPException, status, Depends, Request, Header
 from typing import List
 from datetime import datetime, timedelta
 
@@ -15,13 +15,17 @@ from app.modules.content_planner.schemas import (
     ContentCampaignListResponse,
     LaunchCampaignResponse,
     CampaignStatusResponse,
+    N8nCallbackRequest,
+    N8nCallbackResponse,
 )
 from app.modules.content_planner.service import ContentPlannerService
 from app.modules.content_planner.models import ContentCampaign, CampaignStatus
 from app.api.deps import requires_plan
 from app.core.database import get_session
+from app.core.config import settings
 from app.models.user import User, PlanTier
-from sqlmodel import Session
+from sqlmodel import Session, select
+from typing import Optional
 
 
 router = APIRouter(prefix="/content-planner", tags=["content-planner"])
@@ -382,5 +386,116 @@ async def get_campaign_job_status(
             progress=None,
             result=None,
             error=f"Error al consultar job: {str(e)}"
+        )
+
+
+@router.post(
+    "/webhook/callback",
+    response_model=N8nCallbackResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Callback de n8n con contenido generado",
+    description="Endpoint público para recibir callbacks de n8n con el contenido generado. Requiere autenticación mediante header X-BAI-Secret."
+)
+async def n8n_callback(
+    callback_data: N8nCallbackRequest,
+    x_bai_secret: Optional[str] = Header(None, alias="X-BAI-Secret"),
+    session: Session = Depends(get_session),
+    service: ContentPlannerService = Depends(get_content_planner_service)
+) -> N8nCallbackResponse:
+    """
+    Endpoint para recibir callbacks de n8n con contenido generado.
+    
+    **SEGURIDAD:** Este endpoint NO requiere autenticación JWT, pero valida
+    el header `X-BAI-Secret` para asegurar que el callback proviene de n8n.
+    
+    Flujo:
+    1. n8n genera el contenido (4 Posts + 1 Reel)
+    2. n8n hace POST a este endpoint con el contenido generado
+    3. Este endpoint actualiza la campaña en la DB con el contenido
+    4. La campaña queda en estado REVIEW_READY para que el usuario la revise
+    
+    Args:
+        callback_data: Datos del callback de n8n (campaign_id, generated_content, error)
+        x_bai_secret: Header de seguridad (debe coincidir con INTERNAL_WEBHOOK_SECRET)
+        session: Sesión de base de datos
+        service: Servicio de content planner (inyectado)
+    
+    Returns:
+        N8nCallbackResponse: Confirmación de recepción
+    
+    Raises:
+        HTTPException 401: Si el secret no coincide
+        HTTPException 404: Si la campaña no existe
+        HTTPException 400: Si los datos son inválidos
+    """
+    # Validar secret (seguridad)
+    if not settings.INTERNAL_WEBHOOK_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="INTERNAL_WEBHOOK_SECRET no está configurado en el servidor"
+        )
+    
+    # Verificar que el secret coincida (del header o del payload)
+    provided_secret = x_bai_secret or callback_data.secret_token
+    if provided_secret != settings.INTERNAL_WEBHOOK_SECRET:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Secret inválido. El callback debe incluir el header 'X-BAI-Secret' correcto."
+        )
+    
+    try:
+        # Obtener campaña (sin verificar user_id porque es un callback interno)
+        campaign = session.exec(
+            select(ContentCampaign).where(ContentCampaign.id == callback_data.campaign_id)
+        ).first()
+        
+        if not campaign:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Campaña con ID {callback_data.campaign_id} no encontrada"
+            )
+        
+        # Si hay error en el callback, marcar como FAILED
+        if callback_data.error:
+            service.update_campaign_status(
+                campaign_id=callback_data.campaign_id,
+                status=CampaignStatus.FAILED,
+                session=session,
+                error_message=callback_data.error
+            )
+            
+            return N8nCallbackResponse(
+                success=False,
+                message=f"Campaña {callback_data.campaign_id} marcada como fallida: {callback_data.error}",
+                campaign_id=callback_data.campaign_id
+            )
+        
+        # Validar que haya contenido generado
+        if not callback_data.generated_content:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="El callback debe incluir 'generated_content' con el contenido generado"
+            )
+        
+        # Actualizar campaña con contenido generado y estado COMPLETED
+        service.update_campaign_status(
+            campaign_id=callback_data.campaign_id,
+            status=CampaignStatus.COMPLETED,
+            session=session,
+            generated_content=callback_data.generated_content
+        )
+        
+        return N8nCallbackResponse(
+            success=True,
+            message=f"Campaña {callback_data.campaign_id} actualizada. Contenido generado y listo.",
+            campaign_id=callback_data.campaign_id
+        )
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error procesando callback de n8n: {str(e)}"
         )
 

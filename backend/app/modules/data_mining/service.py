@@ -210,51 +210,77 @@ class DataMiningService:
             raise ValueError(f"Query con ID {query_id} no encontrada o no pertenece al usuario.")
         
         if not query.arq_job_id:
+            # Si no hay job_id, retornar el estado de la query en la DB
             return {
-                "status": "not_found",
+                "status": query.status.value if hasattr(query.status, 'value') else str(query.status),
                 "progress": 0,
                 "result": None,
                 "error": "No hay un job de Arq asociado a esta query.",
                 "job_id": "N/A"
             }
         
-        job = await arq_pool.get_job(query.arq_job_id)
-        
-        if not job:
+        try:
+            from arq.jobs import Job
+            
+            # Usar la nueva API de arq: Job(job_id, redis)
+            job = Job(query.arq_job_id, arq_pool)
+            job_status = await job.status()
+            
+            # Si el job no existe en Redis (expiró), usar el estado de la DB
+            if job_status is None:
+                return {
+                    "status": query.status.value if hasattr(query.status, 'value') else str(query.status),
+                    "progress": 100 if query.status == ExtractionStatus.COMPLETED else 0,
+                    "result": query.results,
+                    "error": query.error_message,
+                    "job_id": query.arq_job_id
+                }
+            
+            status_str = job_status
+            progress = 0
+            result = None
+            error = None
+            
+            if status_str == "queued" or status_str == "deferred":
+                progress = 0
+            elif status_str == "running":
+                # Calcular progreso estimado basado en tiempo transcurrido
+                if query.started_at:
+                    time_elapsed = (datetime.utcnow() - query.started_at).total_seconds()
+                    estimated_total_time = 5  # 5 segundos estimados de procesamiento
+                    progress = min(int((time_elapsed / estimated_total_time) * 100), 99)
+                else:
+                    progress = 10  # Default small progress if start time not set yet
+            elif status_str == "complete":
+                progress = 100
+                # Intentar obtener el resultado del job
+                try:
+                    result = await job.result()
+                except Exception:
+                    # Si falla, usar los resultados de la DB
+                    result = query.results
+            elif status_str == "failed":
+                progress = 100
+                try:
+                    error_info = await job.result()
+                    error = str(error_info) if error_info else "Job failed"
+                except Exception as e:
+                    # Si falla, usar el error_message de la DB
+                    error = query.error_message or str(e)
+            
             return {
-                "status": "not_found",
-                "progress": 0,
-                "result": None,
-                "error": f"Job de Arq '{query.arq_job_id}' no encontrado en Redis.",
+                "status": status_str,
+                "progress": progress,
+                "result": result,
+                "error": error,
                 "job_id": query.arq_job_id
             }
-        
-        status_str = job.status
-        progress = 0
-        result = None
-        error = None
-        
-        if status_str == "queued" or status_str == "deferred":
-            progress = 0
-        elif status_str == "running":
-            # Calcular progreso estimado basado en tiempo transcurrido
-            if query.started_at:
-                time_elapsed = (datetime.utcnow() - query.started_at).total_seconds()
-                estimated_total_time = 5  # 5 segundos estimados de procesamiento
-                progress = min(int((time_elapsed / estimated_total_time) * 100), 99)
-            else:
-                progress = 10  # Default small progress if start time not set yet
-        elif status_str == "complete":
-            progress = 100
-            result = job.result
-        elif status_str == "failed":
-            progress = 100
-            error = str(job.exc_info)
-        
-        return {
-            "status": status_str,
-            "progress": progress,
-            "result": result,
-            "error": error,
-            "job_id": query.arq_job_id
-        }
+        except Exception as e:
+            # Si hay cualquier error al consultar Redis, fallback al estado de la DB
+            return {
+                "status": query.status.value if hasattr(query.status, 'value') else str(query.status),
+                "progress": 100 if query.status == ExtractionStatus.COMPLETED else (50 if query.status == ExtractionStatus.IN_PROGRESS else 0),
+                "result": query.results,
+                "error": query.error_message or f"Error al consultar job en Redis: {str(e)}",
+                "job_id": query.arq_job_id
+            }

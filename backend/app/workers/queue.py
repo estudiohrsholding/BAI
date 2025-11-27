@@ -76,16 +76,33 @@ async def get_job_status(job_id: str) -> Optional[Dict[str, Any]]:
         
         redis_pool = await create_pool(redis_settings)
         
-        job = await redis_pool.get_job(job_id)
+        from arq.jobs import Job
+        job = Job(job_id, redis_pool)
+        job_status = await job.status()
         
         await redis_pool.close()
         
-        if job:
+        if job_status is not None:
+            result = None
+            error = None
+            
+            if job_status == "complete":
+                try:
+                    result = await job.result()
+                except Exception:
+                    pass
+            elif job_status == "failed":
+                try:
+                    error_info = await job.result()
+                    error = str(error_info) if error_info else "Job failed"
+                except Exception as e:
+                    error = str(e)
+            
             return {
-                "job_id": job.job_id,
-                "status": job.status,
-                "result": job.result,
-                "error": str(job.exc_info) if job.exc_info else None
+                "job_id": job_id,
+                "status": job_status,
+                "result": result,
+                "error": error
             }
         
         return None

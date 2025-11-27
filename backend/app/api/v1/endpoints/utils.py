@@ -159,19 +159,38 @@ async def get_job_status_endpoint(
                 detail="Arq worker no inicializado. Verifica el startup del backend."
             )
         
-        job = await arq_pool.get_job(job_id)
+        from arq.jobs import Job
         
-        if not job:
+        job = Job(job_id, arq_pool)
+        job_status = await job.status()
+        
+        if job_status is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Job '{job_id}' no encontrado"
             )
         
+        # Obtener resultado y error si están disponibles
+        result = None
+        error = None
+        
+        if job_status == "complete":
+            try:
+                result = await job.result()
+            except Exception:
+                pass
+        elif job_status == "failed":
+            try:
+                error_info = await job.result()
+                error = str(error_info) if error_info else "Job failed"
+            except Exception as e:
+                error = str(e)
+        
         return JobStatusResponse(
-            job_id=job.job_id,
-            status=job.status,
-            result=job.result,
-            error=str(job.exc_info) if job.exc_info else None
+            job_id=job_id,
+            status=job_status,
+            result=result,
+            error=error
         )
     
     except HTTPException:

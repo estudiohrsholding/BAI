@@ -17,6 +17,8 @@ class CampaignStatus(str, Enum):
     """Estado de una campaña de contenido mensual"""
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
+    PROCESSING_REMOTE = "processing_remote"  # Enviado a n8n, esperando callback
+    REVIEW_READY = "review_ready"  # Contenido generado, listo para revisión
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"

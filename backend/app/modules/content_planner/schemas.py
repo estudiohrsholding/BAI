@@ -116,3 +116,29 @@ class CampaignStatusResponse(BaseModel):
         description="Mensaje de error si el job falló"
     )
 
+
+class N8nCallbackRequest(BaseModel):
+    """Request del callback de n8n con contenido generado"""
+    
+    campaign_id: int = Field(..., description="ID de la campaña")
+    generated_content: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Contenido generado por n8n (4 Posts + 1 Reel con textos, imágenes, etc.)"
+    )
+    secret_token: Optional[str] = Field(
+        default=None,
+        description="Token secreto para validar que el callback viene de n8n"
+    )
+    error: Optional[str] = Field(
+        default=None,
+        description="Mensaje de error si n8n falló al generar el contenido"
+    )
+
+
+class N8nCallbackResponse(BaseModel):
+    """Response del callback de n8n"""
+    
+    success: bool = Field(..., description="Si el callback fue procesado correctamente")
+    message: str = Field(..., description="Mensaje descriptivo")
+    campaign_id: Optional[int] = Field(default=None, description="ID de la campaña procesada")
+
