@@ -1,0 +1,76 @@
+# B.A.I. Backend - Dependencias para Arquitectura Modular Monolith
+# Basado en Domain-Driven Design (DDD) y Vertical Slice Architecture
+
+# ============================================
+# CORE FRAMEWORK
+# ============================================
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+
+# ============================================
+# DATABASE & ORM
+# ============================================
+sqlmodel>=0.0.14
+psycopg[binary]>=3.2.0
+alembic>=1.13.0  # Migrations
+pgvector>=0.3.0  # Vector store (PostgreSQL extension)
+
+# ============================================
+# AI & LLM
+# ============================================
+google-generativeai>=0.8.0  # Gemini
+# openai>=1.0.0  # OpenAI (futuro)
+# anthropic>=0.18.0  # Anthropic Claude (futuro)
+
+# ============================================
+# BACKGROUND TASKS
+# ============================================
+arq>=0.25.0  # Async task queue (Redis-based)
+redis>=5.0.0  # Redis client (async)
+hiredis>=2.2.0  # Redis parser (performance)
+
+# ============================================
+# HTTP CLIENT
+# ============================================
+httpx>=0.26.0
+
+# ============================================
+# SECURITY
+# ============================================
+bcrypt==4.0.1
+passlib[bcrypt]>=1.7.4
+python-jose[cryptography]>=3.3.0
+
+# ============================================
+# PAYMENTS
+# ============================================
+stripe>=7.0.0
+
+# ============================================
+# OBSERVABILITY
+# ============================================
+opentelemetry-api>=1.21.0
+opentelemetry-sdk>=1.21.0
+opentelemetry-instrumentation-fastapi>=0.42b0
+opentelemetry-instrumentation-sqlalchemy>=0.42b0
+opentelemetry-instrumentation-httpx>=0.42b0
+opentelemetry-exporter-otlp-proto-grpc>=1.21.0
+opentelemetry-exporter-console>=1.21.0
+
+# ============================================
+# UTILITIES
+# ============================================
+python-multipart>=0.0.6
+email-validator>=2.1.0
+
+# ============================================
+# TESTING (Development)
+# ============================================
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+httpx>=0.26.0  # Para testing de API
+testcontainers>=4.0.0  # Para testing con containers
+

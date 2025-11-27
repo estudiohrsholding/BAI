@@ -1,0 +1,191 @@
+"""
+Chat Routes - Endpoints HTTP del Módulo Chat
+
+Define los endpoints HTTP para el módulo Chat.
+Solo maneja HTTP (request/response), delega la lógica a ChatService.
+"""
+
+from fastapi import APIRouter, HTTPException, status
+from typing import List
+
+from app.modules.chat.schemas import (
+    ChatMessageRequest,
+    ChatMessageResponse,
+    ChatHistoryResponse,
+    WidgetChatRequest,
+    ChatMessageItem
+)
+from app.modules.chat.service import ChatService
+from app.core.dependencies import (
+    ChatServiceDep,
+    DatabaseDep,
+    AIEngineDep
+)
+from app.modules.chat.models import ChatMessage
+
+
+router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
+
+
+@router.post(
+    "/message",
+    response_model=ChatMessageResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Enviar mensaje de chat",
+    description="Procesa un mensaje del usuario y genera una respuesta del motor de IA"
+)
+async def send_message(
+    request: ChatMessageRequest,
+    chat_service: ChatServiceDep,
+    session: DatabaseDep,
+    current_user_id: int  # TODO: Inyectar desde auth middleware
+) -> ChatMessageResponse:
+    """
+    Endpoint para enviar un mensaje de chat (autenticado).
+    
+    Args:
+        request: Datos del mensaje
+        chat_service: Servicio de chat (inyectado)
+        session: Sesión de base de datos (inyectada)
+        current_user_id: ID del usuario autenticado
+    
+    Returns:
+        ChatMessageResponse: Respuesta del motor de IA
+    
+    Raises:
+        HTTPException: Si el procesamiento falla
+    """
+    try:
+        response_text = await chat_service.process_message(
+            user_id=current_user_id,
+            message=request.text,
+            session=session,
+            client_id=request.client_id,
+            context=request.context
+        )
+        
+        return ChatMessageResponse(
+            response=response_text,
+            metadata={
+                "model": chat_service.ai_engine.model_name,
+                "provider": chat_service.ai_engine.provider
+            }
+        )
+    
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error procesando mensaje: {str(e)}"
+        )
+
+
+@router.get(
+    "/history",
+    response_model=ChatHistoryResponse,
+    summary="Obtener historial de chat",
+    description="Retorna el historial completo de conversación del usuario"
+)
+async def get_history(
+    chat_service: ChatServiceDep,
+    session: DatabaseDep,
+    current_user_id: int  # TODO: Inyectar desde auth middleware
+) -> ChatHistoryResponse:
+    """
+    Endpoint para obtener el historial de conversación.
+    
+    Args:
+        chat_service: Servicio de chat (inyectado)
+        session: Sesión de base de datos (inyectada)
+        current_user_id: ID del usuario autenticado
+    
+    Returns:
+        ChatHistoryResponse: Historial de mensajes
+    """
+    messages = chat_service.get_conversation_history(
+        user_id=current_user_id,
+        session=session
+    )
+    
+    # Convertir a esquemas de respuesta
+    message_items = [
+        ChatMessageItem(
+            id=msg.id,
+            role=msg.role,
+            content=msg.content,
+            timestamp=msg.timestamp
+        )
+        for msg in messages
+    ]
+    
+    return ChatHistoryResponse(
+        messages=message_items,
+        total=len(message_items)
+    )
+
+
+@router.post(
+    "/widget",
+    response_model=ChatMessageResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Chat para widgets externos (público)",
+    description="Endpoint público para widgets embebidos en sitios de clientes"
+)
+async def widget_chat(
+    request: WidgetChatRequest,
+    ai_engine: AIEngineDep,
+    session: DatabaseDep
+) -> ChatMessageResponse:
+    """
+    Endpoint público para widgets externos.
+    
+    No requiere autenticación, pero usa client_id para personalización.
+    
+    Args:
+        request: Datos del mensaje del widget
+        ai_engine: Motor de IA (inyectado)
+        session: Sesión de base de datos (inyectada)
+    
+    Returns:
+        ChatMessageResponse: Respuesta del motor de IA
+    """
+    try:
+        # Construir system instruction según client_id
+        from app.modules.chat.service import ChatService
+        from app.modules.chat.repository import ChatRepository
+        
+        repository = ChatRepository(session=session)
+        service = ChatService(
+            ai_engine=ai_engine,
+            repository=repository,
+            cache=None  # Cache opcional para widgets
+        )
+        
+        # Procesar mensaje (sin user_id, es público)
+        # TODO: Crear user_id temporal o usar client_id como identificador
+        response_text = await service.process_message(
+            user_id=0,  # Usuario anónimo
+            message=request.message,
+            session=session,
+            client_id=request.client_id,
+            context={"history": request.history} if request.history else None
+        )
+        
+        return ChatMessageResponse(
+            response=response_text,
+            metadata={
+                "model": ai_engine.model_name,
+                "provider": ai_engine.provider
+            }
+        )
+    
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error procesando mensaje del widget: {str(e)}"
+        )
+

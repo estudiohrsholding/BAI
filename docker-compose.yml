@@ -30,6 +30,7 @@ services:
     environment:
       # Forzamos la conexión a la DB aquí por si falla en el .env
       - DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/bai
+      - REDIS_URL=redis://redis:6379/0
     volumes:
       - ./backend:/app
       - shared_data:/app/app/data
@@ -37,8 +38,32 @@ services:
       - "8000:8000"
     depends_on:
       - db
+      - redis
     networks:
       - bai
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: bai-worker
+    env_file:
+      - ./backend/.env
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/bai
+      - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+    volumes:
+      - ./backend:/app
+    command: arq app.workers.main.WorkerSettings
+    depends_on:
+      - db
+      - redis
+    networks:
+      - bai
+    restart: unless-stopped
 
   db:
     image: postgres:15-alpine
@@ -52,6 +77,18 @@ services:
       - db-data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    networks:
+      - bai
+
+  redis:
+    image: redis:7-alpine
+    container_name: bai-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
     networks:
       - bai
 
@@ -98,6 +135,7 @@ volumes:
   caddy_data:
   caddy_config:
   shared_data:
+  redis_data:
 
 networks:
   bai:

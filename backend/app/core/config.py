@@ -43,6 +43,19 @@ class Settings(BaseSettings):
       )
     return v
 
+  # Redis Configuration
+  REDIS_URL: str = "redis://redis:6379/0"
+  REDIS_HOST: str = "redis"
+  REDIS_PORT: int = 6379
+  REDIS_PASSWORD: str | None = None
+  REDIS_DB: int = 0
+  
+  # Observability
+  ENVIRONMENT: str = "development"
+  APP_VERSION: str = "1.0.0"
+  OTLP_ENDPOINT: str | None = None  # OpenTelemetry endpoint (Jaeger, Tempo, etc.)
+  DEBUG: bool = False
+  
   # This allows extra fields in .env without crashing
   model_config = SettingsConfigDict(
     env_file=".env",

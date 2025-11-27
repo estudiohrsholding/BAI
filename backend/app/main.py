@@ -4,8 +4,11 @@ from fastapi import FastAPI, Depends, Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
 from sqlmodel import Session, select
+from arq import create_pool
+from arq.connections import RedisSettings
 
-from app.api.router import router as api_router
+from app.api.router import router as legacy_router
+from app.api.v1.router import api_router as api_v1_router
 from app.api.routes import auth as auth_router
 from app.api.routes import data as data_router
 from app.api.routes import billing as billing_router
@@ -16,6 +19,7 @@ from app.services.bai_brain import get_bai_response, get_widget_response
 from app.models.chat import ChatMessage  # Import to register the model
 from app.models.user import User  # Import to register the model
 from app.models.log import SearchLog  # Import to register the model
+from app.workers.settings import WorkerSettings
 
 
 class ChatRequest(BaseModel):
@@ -32,8 +36,19 @@ class WidgetChatRequest(BaseModel):
 async def lifespan(app: FastAPI):
   # Startup: Create database tables
   create_db_and_tables()
-  yield
-  # Shutdown: (if needed, cleanup code goes here)
+  redis_settings = RedisSettings(
+    host=settings.REDIS_HOST,
+    port=settings.REDIS_PORT,
+    password=settings.REDIS_PASSWORD,
+    database=settings.REDIS_DB,
+  )
+  app.state.arq_pool = await create_pool(redis_settings)
+  try:
+    yield
+  finally:
+    arq_pool = getattr(app.state, "arq_pool", None)
+    if arq_pool:
+      await arq_pool.close()
 
 
 def create_app() -> FastAPI:
@@ -143,7 +158,10 @@ def configure_routes(app: FastAPI) -> None:
   app.add_api_route("/api/chat", chat_endpoint, methods=["POST"], summary="Chat endpoint")
   app.add_api_route("/api/chat/history", chat_history_endpoint, methods=["GET"], summary="Chat history endpoint")
   app.add_api_route("/api/v1/widget/chat", widget_chat_endpoint, methods=["POST"], summary="Widget chat endpoint (public)")
-  app.include_router(api_router)
+  # Rutas legacy (/v1/health) para compatibilidad
+  app.include_router(legacy_router)
+  # Rutas modernas versionadas (/api/v1/*)
+  app.include_router(api_v1_router)
   app.include_router(auth_router.router, prefix="/api/auth", tags=["auth"])
   app.include_router(data_router.router, prefix="/api/data", tags=["data"])
   app.include_router(billing_router.router, prefix="/api/billing", tags=["billing"])

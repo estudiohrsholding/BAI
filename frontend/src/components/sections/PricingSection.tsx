@@ -8,14 +8,23 @@ import {
   Mail,
   X,
   Crown,
+  Zap,
+  Eye,
+  Video,
+  Image as ImageIcon,
+  Megaphone,
+  ArrowRight
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// --- Interfaces & Tipos ---
 
 interface Plan {
   name: string;
   tagline: string;
   price: string;
   period: string;
+  setupFee?: string; // Nuevo: Para mostrar el pago único
   theme: "emerald" | "violet" | "amber";
   isPopular?: boolean;
   buttonText: string;
@@ -23,58 +32,108 @@ interface Plan {
   features: string[];
 }
 
+interface Booster {
+  name: string;
+  price: string;
+  period?: string; // ej: "/mes" o nada si es one-off
+  description: string;
+  icon: any;
+  category: "Data" | "Content" | "Growth";
+}
+
+// --- Configuración de Datos (La Verdad del Negocio) ---
+
 const PLANS: Plan[] = [
   {
-    name: "BASIC",
-    tagline: "Tu Recepcionista Omnicanal",
-    price: "99€",
+    name: "MOTOR",
+    tagline: "La Base Operativa",
+    price: "199€",
     period: "/ mes",
+    setupFee: "499€ Setup Inicial",
     theme: "emerald",
-    buttonText: "Comenzar Ahora",
-    buttonHref: "/checkout?plan=basic",
+    buttonText: "Iniciar Motor",
+    buttonHref: "/checkout?plan=motor",
     features: [
-      "Chatbot Web + Instagram + Facebook",
-      "Atención 24/7 (Respuestas Rápidas)",
-      "Gestión de Citas y Reservas",
-      "Respuesta Automática a Reseñas",
-      "Límite: 500 Conversaciones/mes",
+      "Chatbot Omnicanal (Web + IG + FB)",
+      "Gestión de Citas Automática",
+      "Respuesta Inteligente a Reseñas",
+      "Dashboard de Control Básico",
+      "Soporte vía Ticket",
     ],
   },
   {
-    name: "PREMIUM",
-    tagline: "Tu Agencia de Marketing IA",
-    price: "399€",
+    name: "CEREBRO",
+    tagline: "El Motor de Crecimiento",
+    price: "499€",
     period: "/ mes",
+    setupFee: "999€ Setup Inicial",
     theme: "violet",
-    isPopular: true,
-    buttonText: "Contratar Agencia IA",
-    buttonHref: "/checkout?plan=premium",
+    isPopular: true, // Este es el que queremos vender
+    buttonText: "Activar Agencia IA",
+    buttonHref: "/checkout?plan=cerebro",
     features: [
-      "Todo lo incluido en Basic",
-      "Integración WhatsApp Business",
-      "Creación de Contenido (Posts & Copy)",
-      "Video Marketing IA (4 Reels/mes)",
-      "Influencer de Marca (20 Img/mes)",
-      "Auto-Publicación en Redes",
-      "Data Mining: Tendencias Virales",
-      "Límite: 2.000 Conversaciones/mes",
+      "Todo lo incluido en Motor",
+      "WhatsApp Business Inteligente",
+      "Pack Contenido (4 Posts + 1 Reel/mes)",
+      "1 Informe de Mercado Mensual",
+      "Prioridad de Soporte Media",
+      "Acceso a Marketplace de Boosters",
     ],
   },
   {
-    name: "ENTERPRISE",
-    tagline: "Dominio Total del Mercado",
-    price: "Consultar",
-    period: "",
+    name: "PARTNER",
+    tagline: "Socio Tecnológico Total",
+    price: "2.500€", // Desde
+    period: "/ mes (Desde)",
     theme: "amber",
-    buttonText: "Contactar Socio",
+    buttonText: "Hablar con Socio",
     features: [
-      "Automatización Ilimitada",
-      "Modelos IA Personalizados (Fine-tuning)",
-      "Herramientas de Extracción Ultrapotentes",
-      "Análisis de Mercados y Deep Learning",
-      "Estrategia de Expansión Dedicada",
-      "Soporte Prioritario CEO-to-CEO",
+      "Despliegue de Software a Medida",
+      "Automatización n8n Ilimitada",
+      "Minería de Datos Profunda",
+      "Fine-tuning de Modelos IA",
+      "Estrategia Geoespacial",
+      "Soporte Directo CEO-to-CEO",
     ],
+  },
+];
+
+const BOOSTERS: Booster[] = [
+  {
+    name: "El Espía",
+    price: "99€",
+    description: "Informe de inteligencia: Precios y debilidades de 3 competidores.",
+    icon: Eye,
+    category: "Data",
+  },
+  {
+    name: "Radar Viral",
+    price: "149€",
+    period: "/ mes",
+    description: "Alerta semanal de tendencias virales en tu sector.",
+    icon: Zap,
+    category: "Data",
+  },
+  {
+    name: "Viralidad IA",
+    price: "199€",
+    description: "Pack de 4 Reels/TikToks editados con guion y voz IA.",
+    icon: Video,
+    category: "Content",
+  },
+  {
+    name: "Influencer Brand",
+    price: "99€",
+    description: "20 Imágenes de alta calidad para redes sociales.",
+    icon: ImageIcon,
+    category: "Content",
+  },
+  {
+    name: "Reactiva Base",
+    price: "199€",
+    description: "Campaña masiva de WhatsApp para recuperar clientes.",
+    icon: Megaphone,
+    category: "Growth",
   },
 ];
 
@@ -88,8 +147,9 @@ export function PricingSection() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Aquí conectaríamos con n8n o tu backend FastAPI en el futuro
     console.log("Enterprise Contact Form:", formData);
-    alert("¡Solicitud enviada! Nos pondremos en contacto contigo pronto.");
+    alert("¡Solicitud enviada! Un socio se pondrá en contacto contigo.");
     setIsContactOpen(false);
     setFormData({ name: "", email: "", message: "" });
   };
@@ -103,6 +163,7 @@ export function PricingSection() {
     });
   };
 
+  // Helper para estilos dinámicos (Manteniendo tu estética)
   const getThemeClasses = (theme: string, isPremium: boolean) => {
     switch (theme) {
       case "emerald":
@@ -145,38 +206,30 @@ export function PricingSection() {
     }
   };
 
-  const isAIFeature = (feature: string) => {
-    return (
-      feature.includes("Video Marketing") ||
-      feature.includes("Influencer de Marca") ||
-      feature.includes("Creación de Contenido") ||
-      feature.includes("Auto-Publicación")
-    );
-  };
-
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900/50">
-      <div className="container mx-auto max-w-6xl">
-        <div className="space-y-12">
-          {/* Header */}
-          <div className="text-center">
+    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-slate-900/50 border-t border-slate-800">
+      <div className="container mx-auto max-w-7xl">
+        <div className="space-y-16">
+          
+          {/* Header Principal */}
+          <div className="text-center space-y-4">
             <h2
               className={cn(
                 "text-5xl font-extrabold md:text-6xl",
                 "bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-600",
                 "bg-clip-text text-transparent",
-                "drop-shadow-[0_0_10px_rgba(251,191,36,0.5)]"
+                "drop-shadow-[0_0_10px_rgba(251,191,36,0.3)]"
               )}
             >
-              Elige tu Nivel de Impacto
+              Arquitectura de Negocio
             </h2>
-            <p className="mt-4 text-lg text-slate-400">
-              Desde automatizar respuestas hasta generar contenido viral. B.A.I. escala contigo.
+            <p className="mx-auto max-w-2xl text-lg text-slate-400">
+              Elige el motor que impulsará tu empresa. Desde automatización básica hasta consultoría tecnológica integral.
             </p>
           </div>
 
-          {/* Plans Grid */}
-          <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+          {/* --- GRID DE PLANES PRINCIPALES (CORE) --- */}
+          <div className="grid grid-cols-1 gap-8 md:grid-cols-3 relative z-10">
             {PLANS.map((plan) => {
               const isPremium = plan.isPopular;
               const isEnterprise = plan.theme === "amber";
@@ -187,106 +240,104 @@ export function PricingSection() {
                   key={plan.name}
                   className={cn(
                     "group relative overflow-hidden rounded-2xl border",
-                    "bg-slate-900/90 backdrop-blur p-8 shadow-lg",
-                    "transition-all duration-300 hover:scale-105",
+                    "bg-slate-950/80 backdrop-blur-md p-8 shadow-xl",
+                    "flex flex-col",
+                    "transition-all duration-300 hover:scale-[1.02]",
                     themeClasses.border,
                     themeClasses.shadow,
                     themeClasses.hoverShadow,
                     themeClasses.hoverBorder
                   )}
                 >
-                  {/* Premium Gradient Border Effect */}
+                  {/* Premium Glow Effect */}
                   {isPremium && (
                     <div
                       className={cn(
                         "absolute -inset-[2px] rounded-2xl",
-                        "bg-gradient-to-r from-violet-500 to-fuchsia-500",
-                        "opacity-20 blur-sm group-hover:opacity-30",
-                        "transition-opacity duration-300"
+                        "bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-500",
+                        "opacity-10 blur-xl group-hover:opacity-20",
+                        "transition-opacity duration-500 animate-pulse"
                       )}
                     />
                   )}
 
-                  {/* Popular Badge */}
+                  {/* Badge de Recomendado */}
                   {plan.isPopular && (
                     <div
                       className={cn(
-                        "mb-4 inline-flex items-center gap-2 rounded-full px-3 py-1",
+                        "mb-6 inline-flex w-fit items-center gap-2 rounded-full px-3 py-1",
                         themeClasses.bg
                       )}
                     >
-                      <Sparkles className="h-3 w-3 text-violet-300" />
-                      <span className="text-xs font-semibold uppercase tracking-wide text-violet-300">
-                        RECOMENDADO
+                      <Sparkles className="h-3 w-3 text-violet-300 animate-pulse" />
+                      <span className="text-xs font-bold uppercase tracking-wide text-violet-300">
+                        Estrategia Recomendada
                       </span>
                     </div>
                   )}
 
-                  {/* Tagline */}
-                  <p
-                    className={cn(
-                      "mb-2 text-sm font-medium",
-                      isPremium
-                        ? "bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent"
-                        : themeClasses.text
-                    )}
-                  >
-                    {plan.tagline}
-                  </p>
-
-                  {/* Title */}
-                  <h3
-                    className={cn(
-                      "mb-2 text-2xl font-bold",
-                      isPremium || isEnterprise
-                        ? themeClasses.textGradient
-                        : themeClasses.text
-                    )}
-                  >
-                    {plan.name}
-                  </h3>
-
-                  {/* Price */}
+                  {/* Cabecera del Plan */}
                   <div className="mb-6">
-                    <span
+                    <h3
                       className={cn(
-                        "text-4xl font-bold",
+                        "text-3xl font-bold tracking-tight mb-2",
                         isPremium || isEnterprise
                           ? themeClasses.textGradient
                           : themeClasses.text
                       )}
                     >
-                      {plan.price}
-                    </span>
-                    {plan.period && (
-                      <span className="text-slate-400"> {plan.period}</span>
+                      {plan.name}
+                    </h3>
+                    <p className="text-sm font-medium text-slate-400">
+                      {plan.tagline}
+                    </p>
+                  </div>
+
+                  {/* Precio */}
+                  <div className="mb-8 p-4 rounded-xl bg-slate-900/50 border border-slate-800">
+                    <div className="flex items-baseline gap-1">
+                      <span
+                        className={cn(
+                          "text-4xl font-bold",
+                          isPremium || isEnterprise
+                            ? themeClasses.textGradient
+                            : themeClasses.text
+                        )}
+                      >
+                        {plan.price}
+                      </span>
+                      {plan.period && (
+                        <span className="text-slate-400 font-medium">{plan.period}</span>
+                      )}
+                    </div>
+                    {/* Setup Fee (Vital para tu estrategia) */}
+                    {plan.setupFee && (
+                      <div className="mt-2 text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1">
+                        <span className="h-1 w-1 rounded-full bg-slate-500"/>
+                        {plan.setupFee}
+                      </div>
                     )}
                   </div>
 
                   {/* Features */}
-                  <ul className="mb-8 space-y-3">
-                    {plan.features.map((feature, index) => {
-                      const isAI = isAIFeature(feature);
-                      const Icon = isAI ? Sparkles : Check;
-
-                      return (
-                        <li key={index} className="flex items-start gap-3">
-                          <Icon
-                            className={cn(
-                              "mt-0.5 h-5 w-5 flex-shrink-0",
-                              isAI && isPremium
-                                ? "text-fuchsia-400"
-                                : isPremium
-                                ? "text-violet-400"
-                                : isEnterprise
-                                ? "text-amber-400"
-                                : "text-emerald-400"
-                            )}
-                          />
-                          <span className="text-sm text-slate-300">{feature}</span>
-                        </li>
-                      );
-                    })}
+                  <ul className="mb-8 space-y-4 flex-1">
+                    {plan.features.map((feature, index) => (
+                      <li key={index} className="flex items-start gap-3">
+                        <Check
+                          className={cn(
+                            "mt-1 h-4 w-4 flex-shrink-0",
+                            isPremium
+                              ? "text-fuchsia-400"
+                              : isEnterprise
+                              ? "text-amber-400"
+                              : "text-emerald-400"
+                          )}
+                        />
+                        <span className="text-sm text-slate-300 leading-relaxed">
+                          {feature}
+                        </span>
+                      </li>
+                    ))}
                   </ul>
 
                   {/* CTA Button */}
@@ -295,19 +346,19 @@ export function PricingSection() {
                       onClick={() => setIsContactOpen(true)}
                       className={cn(
                         "flex w-full items-center justify-center gap-2 rounded-lg",
-                        "px-6 py-3 font-semibold transition-all duration-200",
+                        "px-6 py-4 font-bold transition-all duration-200",
                         themeClasses.button
                       )}
                     >
-                      <Mail className="h-4 w-4" />
+                      <Crown className="h-4 w-4" />
                       {plan.buttonText}
                     </button>
                   ) : (
                     <Link
                       href={plan.buttonHref || "#"}
                       className={cn(
-                        "block w-full rounded-lg text-center font-semibold",
-                        "px-6 py-3 transition-all duration-200",
+                        "block w-full rounded-lg text-center font-bold",
+                        "px-6 py-4 transition-all duration-200",
                         themeClasses.button
                       )}
                     >
@@ -319,27 +370,77 @@ export function PricingSection() {
             })}
           </div>
 
-          {/* Additional Info */}
-          <div className="mx-auto max-w-2xl text-center">
+          {/* --- SECCIÓN DE BOOSTERS (Add-ons) --- */}
+          <div className="mt-24 pt-16 border-t border-slate-800">
+            <div className="text-center mb-12">
+              <h3 className="text-3xl font-bold text-white mb-4">
+                Marketplace de <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">Boosters</span>
+              </h3>
+              <p className="text-slate-400 max-w-2xl mx-auto">
+                Potencia tu plan con módulos de inteligencia y contenido bajo demanda. 
+                Paga solo por lo que necesitas, cuando lo necesitas.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+              {BOOSTERS.map((booster, idx) => {
+                const Icon = booster.icon;
+                return (
+                  <div 
+                    key={idx}
+                    className="group bg-slate-900/40 border border-slate-800 hover:border-slate-600 p-5 rounded-xl transition-all hover:bg-slate-900/60 flex flex-col"
+                  >
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className={cn(
+                        "p-2 rounded-lg",
+                        booster.category === "Data" ? "bg-blue-500/10 text-blue-400" :
+                        booster.category === "Content" ? "bg-pink-500/10 text-pink-400" :
+                        "bg-amber-500/10 text-amber-400"
+                      )}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <span className="text-xs font-mono text-slate-500 uppercase">{booster.category}</span>
+                    </div>
+                    
+                    <h4 className="font-bold text-slate-200 mb-1">{booster.name}</h4>
+                    <p className="text-xs text-slate-400 mb-4 flex-1">{booster.description}</p>
+                    
+                    <div className="mt-auto flex items-center justify-between border-t border-slate-800 pt-3">
+                      <div className="flex flex-col">
+                        <span className="text-lg font-bold text-white">{booster.price}</span>
+                        {booster.period && <span className="text-[10px] text-slate-500">{booster.period}</span>}
+                      </div>
+                      <button className="text-xs font-semibold text-slate-300 group-hover:text-white flex items-center gap-1 transition-colors">
+                        Añadir <ArrowRight className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Footer Info */}
+          <div className="mx-auto max-w-2xl text-center mt-12">
             <p className="text-sm text-slate-500">
-              Todos los planes incluyen acceso al Panel de Control y soporte técnico básico.
+              Todos los planes incluyen acceso seguro SSL, actualizaciones de IA y hosting en servidores de alta velocidad.
               <br />
-              ¿Necesitas algo más personalizado?{" "}
+              ¿Dudas sobre el Setup Fee?{" "}
               <button
                 onClick={() => setIsContactOpen(true)}
-                className="font-semibold text-amber-400 hover:text-amber-300 underline"
+                className="font-semibold text-amber-400 hover:text-amber-300 underline decoration-amber-400/30 underline-offset-4"
               >
-                Contacta con nuestro equipo
+                Hablemos claro
               </button>
             </p>
           </div>
         </div>
       </div>
 
-      {/* Contact Modal */}
+      {/* Contact Modal (Manteniendo funcionalidad original) */}
       {isContactOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-sm p-4"
           onClick={() => setIsContactOpen(false)}
         >
           <div
@@ -349,7 +450,6 @@ export function PricingSection() {
             )}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Close Button */}
             <button
               onClick={() => setIsContactOpen(false)}
               className="absolute right-4 top-4 rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
@@ -357,33 +457,21 @@ export function PricingSection() {
               <X className="h-5 w-5" />
             </button>
 
-            {/* Header */}
             <div className="mb-6">
               <div className="mb-2 flex items-center gap-2">
                 <Crown className="h-6 w-6 text-amber-400" />
-                <h2
-                  className={cn(
-                    "text-2xl font-bold",
-                    "bg-gradient-to-r from-amber-300 via-yellow-300 to-amber-400",
-                    "bg-clip-text text-transparent"
-                  )}
-                >
-                  Contactar con Equipo Enterprise
+                <h2 className="text-2xl font-bold text-white">
+                  Contacto Directo
                 </h2>
               </div>
               <p className="text-sm text-slate-400">
-                Completa el formulario y nos pondremos en contacto contigo.
+                Estamos buscando socios, no solo clientes. Cuéntanos tu visión.
               </p>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Name Input */}
               <div>
-                <label
-                  htmlFor="name"
-                  className="mb-2 block text-sm font-medium text-slate-300"
-                >
+                <label htmlFor="name" className="mb-2 block text-sm font-medium text-slate-300">
                   Nombre
                 </label>
                 <input
@@ -393,22 +481,12 @@ export function PricingSection() {
                   value={formData.name}
                   onChange={handleInputChange}
                   required
-                  className={cn(
-                    "w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3",
-                    "text-white placeholder-slate-500",
-                    "focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50",
-                    "transition-colors"
-                  )}
+                  className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400 transition-colors"
                   placeholder="Tu nombre completo"
                 />
               </div>
-
-              {/* Email Input */}
               <div>
-                <label
-                  htmlFor="email"
-                  className="mb-2 block text-sm font-medium text-slate-300"
-                >
+                <label htmlFor="email" className="mb-2 block text-sm font-medium text-slate-300">
                   Email
                 </label>
                 <input
@@ -418,22 +496,12 @@ export function PricingSection() {
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className={cn(
-                    "w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3",
-                    "text-white placeholder-slate-500",
-                    "focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50",
-                    "transition-colors"
-                  )}
+                  className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400 transition-colors"
                   placeholder="tu@email.com"
                 />
               </div>
-
-              {/* Message Textarea */}
               <div>
-                <label
-                  htmlFor="message"
-                  className="mb-2 block text-sm font-medium text-slate-300"
-                >
+                <label htmlFor="message" className="mb-2 block text-sm font-medium text-slate-300">
                   Mensaje
                 </label>
                 <textarea
@@ -443,40 +511,23 @@ export function PricingSection() {
                   onChange={handleInputChange}
                   required
                   rows={4}
-                  className={cn(
-                    "w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3",
-                    "text-white placeholder-slate-500",
-                    "focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/50",
-                    "resize-none transition-colors"
-                  )}
-                  placeholder="Cuéntanos sobre tu proyecto..."
+                  className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-white placeholder-slate-500 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400 resize-none transition-colors"
+                  placeholder="¿Qué buscas automatizar?"
                 />
               </div>
-
-              {/* Buttons */}
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
                   onClick={() => setIsContactOpen(false)}
-                  className={cn(
-                    "flex-1 rounded-lg border border-slate-600 bg-slate-800 px-6 py-3",
-                    "font-semibold text-slate-300 transition-colors",
-                    "hover:bg-slate-700 hover:text-white"
-                  )}
+                  className="flex-1 rounded-lg border border-slate-600 bg-slate-800 px-6 py-3 font-semibold text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className={cn(
-                    "flex-1 rounded-lg",
-                    "bg-gradient-to-r from-amber-500 to-yellow-500 px-6 py-3",
-                    "font-semibold text-white transition-all",
-                    "hover:from-amber-600 hover:to-yellow-600",
-                    "hover:shadow-lg hover:shadow-amber-500/50"
-                  )}
+                  className="flex-1 rounded-lg bg-amber-500 px-6 py-3 font-semibold text-white hover:bg-amber-600 transition-colors shadow-lg shadow-amber-500/20"
                 >
-                  Enviar Solicitud
+                  Enviar
                 </button>
               </div>
             </form>
@@ -486,4 +537,3 @@ export function PricingSection() {
     </section>
   );
 }
-

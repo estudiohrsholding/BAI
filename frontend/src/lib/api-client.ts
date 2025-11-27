@@ -32,6 +32,44 @@ export class ApiError extends Error {
 }
 
 /**
+ * Estado de un servicio individual
+ */
+export interface ServiceStatus {
+  name: string;
+  status: "up" | "down" | "degraded";
+  latency_ms?: number;
+  error?: string;
+}
+
+/**
+ * Respuesta del health check del sistema
+ */
+export interface SystemHealth {
+  status: "healthy" | "degraded" | "unhealthy";
+  timestamp: string;
+  version: string;
+  services: {
+    database?: ServiceStatus;
+    redis?: ServiceStatus;
+    worker?: ServiceStatus;
+    ai_engine?: ServiceStatus;
+  };
+}
+
+/**
+ * Obtiene el estado de salud del sistema
+ * 
+ * @returns Estado de salud de todos los servicios
+ * @throws ApiError si falla la petición
+ */
+export async function getSystemHealth(): Promise<SystemHealth> {
+  return apiPublic<SystemHealth>("/api/v1/health", {
+    requireAuth: false,
+    throwOnError: false
+  });
+}
+
+/**
  * Opciones para peticiones autenticadas
  */
 export interface FetchOptions extends RequestInit {
