@@ -24,7 +24,7 @@ const planDetails: Record<PlanTier, PlanDetails> = {
   motor: {
     name: "motor",
     displayName: "Motor",
-    price: "$590",
+    price: "199€",
     color: "emerald",
     gradient: "from-emerald-500 to-green-500",
     badgeGradient: "from-emerald-500/20 to-green-500/20",
@@ -40,7 +40,7 @@ const planDetails: Record<PlanTier, PlanDetails> = {
   cerebro: {
     name: "cerebro",
     displayName: "Cerebro",
-    price: "$1,890",
+    price: "499€",
     color: "violet",
     gradient: "from-violet-500 to-fuchsia-500",
     badgeGradient: "from-violet-500/20 to-fuchsia-500/20",

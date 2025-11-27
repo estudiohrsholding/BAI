@@ -29,7 +29,7 @@ const plans: PlanCard[] = [
     tier: "MOTOR",
     name: "Motor",
     badge: "El Cuerpo",
-    price: "$590",
+    price: "199€",
     period: "/mes",
     tagline: "Automatización Operativa",
     description:
@@ -51,7 +51,7 @@ const plans: PlanCard[] = [
     tier: "CEREBRO",
     name: "Cerebro",
     badge: "Recomendado",
-    price: "$1,890",
+    price: "499€",
     period: "/mes",
     tagline: "Voz + Inteligencia",
     description:
