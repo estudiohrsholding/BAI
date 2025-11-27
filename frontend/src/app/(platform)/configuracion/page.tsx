@@ -716,7 +716,21 @@ export default function ConfiguracionPage() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {monthlyCampaigns.map((campaign) => (
+                  {monthlyCampaigns.map((campaign) => {
+                    // Debug: Log campaign data
+                    console.log('Campaign Data:', {
+                      id: campaign.id,
+                      status: campaign.status,
+                      hasGeneratedContent: !!campaign.generated_content,
+                      generatedContentKeys: campaign.generated_content ? Object.keys(campaign.generated_content) : [],
+                      generatedContent: campaign.generated_content
+                    });
+
+                    // Condición muy permisiva para mostrar el botón
+                    const shouldShowButton = campaign.generated_content || 
+                                            (campaign.status && campaign.status.toLowerCase().includes('complete'));
+
+                    return (
                     <div
                       key={campaign.id}
                       className="rounded-lg border border-slate-800 bg-slate-900/50 p-4 hover:bg-slate-900/70 transition-colors"
@@ -727,20 +741,32 @@ export default function ConfiguracionPage() {
                             <h3 className="text-base font-semibold text-white">
                               Campaña {campaign.month}
                             </h3>
-                            <span
-                              className={cn(
-                                "rounded-full border px-2 py-0.5 text-xs font-medium",
-                                getStatusColor(campaign.status)
-                              )}
-                            >
-                              {getStatusLabel(campaign.status)}
-                            </span>
                           </div>
-                          <p className="text-sm text-slate-400">
-                            Tono: <span className="text-slate-300">{campaign.tone_of_voice}</span> | 
-                            Temas: <span className="text-slate-300">{campaign.themes.join(", ")}</span>
-                          </p>
                         </div>
+                        <div className="flex items-center gap-2">
+                          {/* Botón "Ver Resultados" - Visible siempre que haya contenido */}
+                          {shouldShowButton && (
+                            <button
+                              onClick={() => setViewingCampaignId(campaign.id)}
+                              className="flex items-center gap-1.5 rounded-md border-2 border-violet-500 bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500 hover:border-violet-400 transition-all shadow-lg shadow-violet-500/20 whitespace-nowrap"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              Ver Resultados
+                            </button>
+                          )}
+                          <span
+                            className={cn(
+                              "rounded-full border px-2 py-0.5 text-xs font-medium",
+                              getStatusColor(campaign.status)
+                            )}
+                          >
+                            {getStatusLabel(campaign.status)}
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-400">
+                          Tono: <span className="text-slate-300">{campaign.tone_of_voice}</span> | 
+                          Temas: <span className="text-slate-300">{campaign.themes.join(", ")}</span>
+                        </p>
                       </div>
 
                       <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
@@ -815,7 +841,8 @@ export default function ConfiguracionPage() {
                         )}
                       </div>
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               )}
 
