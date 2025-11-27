@@ -5,9 +5,12 @@ Endpoints para pruebas y utilidades del sistema.
 Incluye endpoints para disparar tareas asíncronas.
 """
 
-from fastapi import APIRouter, HTTPException, status, Request
+from fastapi import APIRouter, HTTPException, status, Request, Depends
 from pydantic import BaseModel, Field
 from typing import Optional
+
+from app.api.deps import requires_feature, requires_plan, get_current_user
+from app.models.user import User, PlanTier
 
 router = APIRouter(prefix="/utils", tags=["utils"])
 
@@ -60,17 +63,25 @@ class JobStatusResponse(BaseModel):
     response_model=TaskEnqueuedResponse,
     status_code=status.HTTP_202_ACCEPTED,
     summary="Disparar tarea pesada de prueba",
-    description="Encola una tarea pesada en background para pruebas del sistema de workers"
+    description="Encola una tarea pesada en background para pruebas del sistema de workers. Requiere autenticación."
 )
-async def trigger_heavy_task(request: Request, payload: HeavyTaskRequest) -> TaskEnqueuedResponse:
+async def trigger_heavy_task(
+    request: Request,
+    payload: HeavyTaskRequest,
+    current_user: User = Depends(get_current_user),
+) -> TaskEnqueuedResponse:
     """
     Endpoint para disparar una tarea pesada de prueba.
     
     Esta tarea se ejecuta en background usando Arq workers.
     No bloquea la API, retorna inmediatamente con el job_id.
     
+    **REQUIERE AUTENTICACIÓN** (cualquier plan puede usar este endpoint de prueba)
+    
     Args:
-        request: Datos de la tarea a ejecutar
+        request: Request de FastAPI (para acceder a arq_pool)
+        payload: Datos de la tarea a ejecutar
+        current_user: Usuario autenticado (cualquier plan)
     
     Returns:
         TaskEnqueuedResponse: ID del job y estado inicial
@@ -117,14 +128,22 @@ async def trigger_heavy_task(request: Request, payload: HeavyTaskRequest) -> Tas
     "/jobs/{job_id}",
     response_model=JobStatusResponse,
     summary="Consultar estado de un job",
-    description="Obtiene el estado actual de un job asíncrono"
+    description="Obtiene el estado actual de un job asíncrono. Requiere autenticación."
 )
-async def get_job_status_endpoint(request: Request, job_id: str) -> JobStatusResponse:
+async def get_job_status_endpoint(
+    request: Request,
+    job_id: str,
+    current_user: User = Depends(get_current_user),
+) -> JobStatusResponse:
     """
     Endpoint para consultar el estado de un job.
     
+    **REQUIERE AUTENTICACIÓN** (cualquier plan puede usar este endpoint de prueba)
+    
     Args:
+        request: Request de FastAPI (para acceder a arq_pool)
         job_id: ID del job a consultar
+        current_user: Usuario autenticado (cualquier plan)
     
     Returns:
         JobStatusResponse: Estado del job, resultado si está completo, error si falló
@@ -162,4 +181,13 @@ async def get_job_status_endpoint(request: Request, job_id: str) -> JobStatusRes
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al consultar job: {str(e)}"
         )
+
+
+@router.get(
+    "/guard/mining-access",
+    summary="Verificar privilegios para minería de datos",
+    description="Ejemplo de cómo aplicar un guard de plan. Solo CEREBRO o superior."
+)
+async def verify_mining_access(_: User = Depends(requires_plan(PlanTier.CEREBRO))) -> dict:
+    return {"detail": "Tienes acceso a las capacidades de minería de datos."}
 

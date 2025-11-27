@@ -7,13 +7,15 @@ import Cookies from "js-cookie";
 import {
   Clock,
   Users,
-  Workflow,
   ExternalLink,
   MessageCircle,
   Mail,
   Calendar,
   MessageSquare,
   Sheet,
+  Zap,
+  Workflow,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/atoms/Button";
 import { getMeUrl } from "@/lib/api";
@@ -25,6 +27,9 @@ import {
 import { cn } from "@/lib/utils";
 import { PageContainer, PageItem } from "@/components/ui/PageAnimation";
 import { useChat } from "@/context/ChatContext";
+import { PlanIndicator, PlanTier } from "@/components/common/PlanIndicator";
+
+const PLAN_PRIORITY: PlanTier[] = ["MOTOR", "CEREBRO", "PARTNER"];
 
 interface User {
   id: number;
@@ -34,6 +39,73 @@ interface User {
   is_active: boolean;
   role?: string;
 }
+
+interface AutomationFeature {
+  id: string;
+  name: string;
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  visual: React.ComponentType;
+  requiredPlan: PlanTier;
+  category: "basic" | "premium" | "legendary";
+}
+
+const AUTOMATION_FEATURES: AutomationFeature[] = [
+  {
+    id: "web-receptionist",
+    name: "Recepcionista Web",
+    description: "Atiende preguntas frecuentes en tu web al instante.",
+    icon: MessageCircle,
+    visual: ChatSimulation,
+    requiredPlan: "MOTOR",
+    category: "basic",
+  },
+  {
+    id: "review-guardian",
+    name: "Guardian de Reseñas",
+    description: "Responde y agradece reseñas de 5 estrellas en Google automáticamente.",
+    icon: MessageSquare,
+    visual: ReviewSimulation,
+    requiredPlan: "MOTOR",
+    category: "basic",
+  },
+  {
+    id: "lead-radar",
+    name: "Radar de Leads",
+    description: "Te avisa al móvil cuando entra un cliente importante.",
+    icon: Zap,
+    visual: NotificationSimulation,
+    requiredPlan: "MOTOR",
+    category: "basic",
+  },
+  {
+    id: "custom-webhooks",
+    name: "Flujos Webhook Personalizados",
+    description: "Automatizaciones complejas a medida con integraciones avanzadas.",
+    icon: Workflow,
+    visual: ChatSimulation,
+    requiredPlan: "CEREBRO",
+    category: "premium",
+  },
+  {
+    id: "ai-content-scheduler",
+    name: "Programador de Contenido IA",
+    description: "Crea y programa publicaciones en redes sociales con IA supervisada.",
+    icon: Sparkles,
+    visual: ReviewSimulation,
+    requiredPlan: "CEREBRO",
+    category: "premium",
+  },
+  {
+    id: "ai-influencer-creator",
+    name: "Creador de Influencers IA",
+    description: "Genera y gestiona avatares IA que publican contenido impulsado por Data Mining.",
+    icon: Sparkles,
+    visual: NotificationSimulation,
+    requiredPlan: "PARTNER",
+    category: "legendary",
+  },
+];
 
 interface Tool {
   name: string;
@@ -60,7 +132,7 @@ export default function AutomationPage() {
     const fetchUser = async () => {
       try {
         const token = Cookies.get("bai_token");
-        
+
         if (!token) {
           router.push("/login");
           return;
@@ -74,7 +146,6 @@ export default function AutomationPage() {
         });
 
         if (response.status === 401) {
-          // Token is invalid or expired - remove it and redirect to login
           Cookies.remove("bai_token");
           router.push("/login");
           return;
@@ -86,8 +157,6 @@ export default function AutomationPage() {
 
         const userData = await response.json();
         setUser(userData);
-        
-        // Check if user is admin (RBAC: use role field)
         setIsAdmin(userData.role === "admin");
       } catch (error) {
         console.error("Error loading user data:", error);
@@ -100,8 +169,38 @@ export default function AutomationPage() {
   }, [router]);
 
   const handleAskBAI = () => {
-    // Open chat directly using context
     openChat();
+  };
+
+  const currentPlan = (user?.plan_tier?.toUpperCase() || "MOTOR") as PlanTier;
+
+  const getCategoryStyles = (category: string) => {
+    switch (category) {
+      case "basic":
+        return {
+          border: "border-emerald-500/30",
+          bg: "bg-emerald-500/10",
+          hover: "hover:border-emerald-500/50",
+        };
+      case "premium":
+        return {
+          border: "border-violet-500/30",
+          bg: "bg-violet-500/10",
+          hover: "hover:border-violet-500/50",
+        };
+      case "legendary":
+        return {
+          border: "border-amber-500/30",
+          bg: "bg-amber-500/10",
+          hover: "hover:border-amber-500/50",
+        };
+      default:
+        return {
+          border: "border-slate-800",
+          bg: "bg-slate-900/80",
+          hover: "hover:border-slate-700",
+        };
+    }
   };
 
   return (
@@ -109,11 +208,10 @@ export default function AutomationPage() {
       {/* Hero Header */}
       <PageItem>
         <div>
-          <h1 className="text-4xl font-bold text-white">
-            Centro de Automatización
-          </h1>
+          <h1 className="text-4xl font-bold text-white">Centro de Automatización</h1>
           <p className="mt-2 text-lg text-slate-400">
-            Tus agentes digitales están trabajando 24/7.
+            Explora el espectro completo de automatizaciones. Desde operaciones básicas hasta
+            inteligencia impulsada por datos.
           </p>
         </div>
       </PageItem>
@@ -126,9 +224,7 @@ export default function AutomationPage() {
               <Clock className="h-6 w-6 text-violet-400" />
             </div>
             <div>
-              <p className="text-2xl font-bold text-white">
-                12.5 Horas
-              </p>
+              <p className="text-2xl font-bold text-white">12.5 Horas</p>
               <p className="text-sm text-slate-400">ahorradas este mes</p>
             </div>
           </div>
@@ -147,155 +243,129 @@ export default function AutomationPage() {
         </PageItem>
       </PageContainer>
 
-      {/* Active Agents Grid */}
+      {/* Automation Features Grid - Categorized by Plan */}
       <PageItem>
-        <h2 className="mb-6 text-2xl font-semibold text-white">
-          Agentes Activos
-        </h2>
+        <h2 className="mb-6 text-2xl font-semibold text-white">Catálogo de Automatizaciones</h2>
+        <p className="mb-4 text-sm text-slate-400">
+          Las automatizaciones están organizadas por nivel de complejidad y plan requerido.
+        </p>
       </PageItem>
 
       <PageContainer className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Card 1: Recepcionista Web */}
-        <PageItem>
-          <div className="rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-6 shadow-lg transition-all duration-300 hover:border-emerald-500/50 hover:-translate-y-1">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">
-                Recepcionista Web
-              </h3>
-              <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 text-xs font-medium text-emerald-400">
-                Active
-              </span>
-            </div>
+        {AUTOMATION_FEATURES.map((feature) => {
+          const Icon = feature.icon;
+          const Visual = feature.visual;
+          const styles = getCategoryStyles(feature.category);
+          const hasAccess =
+            PLAN_PRIORITY.indexOf(currentPlan) >= PLAN_PRIORITY.indexOf(feature.requiredPlan);
 
-            {/* Visual Component */}
-            <div className="mb-4 flex justify-center">
-              <ChatSimulation />
-            </div>
+          return (
+            <PageItem key={feature.id}>
+              <div
+                className={cn(
+                  "rounded-xl border bg-slate-900/80 backdrop-blur p-6 shadow-lg transition-all duration-300",
+                  styles.border,
+                  styles.bg,
+                  styles.hover,
+                  "hover:-translate-y-1"
+                )}
+              >
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Icon className="h-5 w-5 text-slate-300" />
+                    <h3 className="text-lg font-semibold text-white">{feature.name}</h3>
+                  </div>
+                  <PlanIndicator requiredPlan={feature.requiredPlan} currentPlan={currentPlan} />
+                </div>
 
-            <p className="text-sm text-slate-400">
-              Atiende preguntas frecuentes en tu web al instante.
-            </p>
-          </div>
-        </PageItem>
+                {/* Visual Component */}
+                <div className="mb-4 flex justify-center">
+                  <Visual />
+                </div>
 
-        {/* Card 2: Gestión de Reputación */}
-        <PageItem>
-          <div className="rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-6 shadow-lg transition-all duration-300 hover:border-emerald-500/50 hover:-translate-y-1">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">
-                Gestión de Reputación
-              </h3>
-              <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 text-xs font-medium text-emerald-400">
-                Active
-              </span>
-            </div>
+                <p className="text-sm text-slate-400 mb-4">{feature.description}</p>
 
-            {/* Visual Component */}
-            <div className="mb-4 flex justify-center">
-              <ReviewSimulation />
-            </div>
-
-            <p className="text-sm text-slate-400">
-              Responde y agradece reseñas de 5 estrellas en Google.
-            </p>
-          </div>
-        </PageItem>
-
-        {/* Card 3: Radar de Leads */}
-        <PageItem>
-          <div className="rounded-xl border border-slate-800 bg-slate-900/80 backdrop-blur p-6 shadow-lg transition-all duration-300 hover:border-emerald-500/50 hover:-translate-y-1">
-            <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">
-                Radar de Leads
-              </h3>
-              <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 text-xs font-medium text-emerald-400">
-                Active
-              </span>
-            </div>
-
-            {/* Visual Component */}
-            <div className="mb-4 flex justify-center">
-              <NotificationSimulation />
-            </div>
-
-            <p className="text-sm text-slate-400">
-              Te avisa al móvil cuando entra un cliente importante.
-            </p>
-          </div>
-        </PageItem>
+                {!hasAccess && (
+                  <Link
+                    href="/#pricing"
+                    className="block w-full mt-4 px-4 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-semibold text-sm text-center transition-all hover:bg-slate-700 hover:border-slate-600"
+                  >
+                    Actualizar Plan
+                  </Link>
+                )}
+              </div>
+            </PageItem>
+          );
+        })}
       </PageContainer>
 
       {/* Tools Integration */}
       <PageItem>
-        <h2 className="mb-4 text-2xl font-semibold text-white">
-          Herramientas Conectadas (Plan Basic)
-        </h2>
+        <h2 className="mb-4 text-2xl font-semibold text-white">Herramientas Conectadas</h2>
       </PageItem>
 
       <PageContainer className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {CONNECTED_TOOLS.map((tool) => {
-                const Icon = tool.icon;
-                const toolContent = (
-                  <div
-                    className={cn(
-                      "flex flex-col items-center gap-3 rounded-xl border p-4 transition-all",
-                      tool.connected
-                        ? "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/50"
-                        : "border-slate-800 bg-slate-900/50"
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        "flex h-12 w-12 items-center justify-center rounded-lg border",
-                        tool.connected ? "bg-emerald-500/20 border-emerald-500/30" : "bg-slate-800 border-slate-700"
-                      )}
-                    >
-                      <Icon
-                        className={cn(
-                          "h-6 w-6",
-                          tool.connected ? "text-emerald-400" : "text-slate-500"
-                        )}
-                      />
-                    </div>
-                    <div className="text-center">
-                      <p
-                        className={cn(
-                          "text-sm font-medium",
-                          tool.connected ? "text-white" : "text-slate-500"
-                        )}
-                      >
-                        {tool.name}
-                      </p>
-                      {tool.connected && (
-                        <span className="mt-1 inline-block rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 text-xs text-emerald-400">
-                          Conectado
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
+        {CONNECTED_TOOLS.map((tool) => {
+          const Icon = tool.icon;
+          const toolContent = (
+            <div
+              className={cn(
+                "flex flex-col items-center gap-3 rounded-xl border p-4 transition-all",
+                tool.connected
+                  ? "border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-500/50"
+                  : "border-slate-800 bg-slate-900/50"
+              )}
+            >
+              <div
+                className={cn(
+                  "flex h-12 w-12 items-center justify-center rounded-lg border",
+                  tool.connected
+                    ? "bg-emerald-500/20 border-emerald-500/30"
+                    : "bg-slate-800 border-slate-700"
+                )}
+              >
+                <Icon
+                  className={cn(
+                    "h-6 w-6",
+                    tool.connected ? "text-emerald-400" : "text-slate-500"
+                  )}
+                />
+              </div>
+              <div className="text-center">
+                <p
+                  className={cn(
+                    "text-sm font-medium",
+                    tool.connected ? "text-white" : "text-slate-500"
+                  )}
+                >
+                  {tool.name}
+                </p>
+                {tool.connected && (
+                  <span className="mt-1 inline-block rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 text-xs text-emerald-400">
+                    Conectado
+                  </span>
+                )}
+              </div>
+            </div>
+          );
 
-                if (tool.link) {
-                  return (
-                    <PageItem key={tool.name}>
-                      <Link
-                        href={tool.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="block"
-                      >
-                        {toolContent}
-                      </Link>
-                    </PageItem>
-                  );
-                }
+          if (tool.link) {
+            return (
+              <PageItem key={tool.name}>
+                <Link
+                  href={tool.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block"
+                >
+                  {toolContent}
+                </Link>
+              </PageItem>
+            );
+          }
 
-                return (
-                  <PageItem key={tool.name}>
-                    {toolContent}
-                  </PageItem>
-                );
-              })}
+          return <PageItem key={tool.name}>{toolContent}</PageItem>;
+        })}
       </PageContainer>
 
       {/* Request Section */}
@@ -322,7 +392,6 @@ export default function AutomationPage() {
                 <span>Hablar con B.A.I.</span>
               </Button>
 
-              {/* Admin Button - Only visible for admins */}
               {isAdmin && (
                 <Link
                   href={process.env.NEXT_PUBLIC_N8N_URL || "http://localhost:5678"}

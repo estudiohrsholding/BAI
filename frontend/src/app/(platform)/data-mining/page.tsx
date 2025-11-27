@@ -46,6 +46,9 @@ import { ProcessingTerminal } from "@/components/modules/data-mining/ProcessingT
 import { useChat } from "@/context/ChatContext";
 import { cn } from "@/lib/utils";
 import { apiGet, apiPost, ApiError } from "@/lib/api-client";
+import { FeatureGate, PlanTier } from "@/components/common/FeatureGate";
+import { QueryLaunchForm } from "@/components/data_mining/QueryLaunchForm";
+import { ExtractionStatusList } from "@/components/data_mining/ExtractionStatusList";
 
 // ============================================
 // ESTRUCTURA DE DATOS DINÁMICA
@@ -192,11 +195,42 @@ function convertBackendReportToDashboardData(backendReport: any): DashboardData 
 // COMPONENTE PRINCIPAL
 // ============================================
 
+interface User {
+  id: number;
+  email: string;
+  full_name: string | null;
+  plan_tier: string;
+  is_active: boolean;
+  role?: string;
+}
+
 export default function DataMiningPage() {
   const [status, setStatus] = useState<"locked" | "processing" | "unlocked">("locked");
   const [data, setData] = useState<DashboardData>(INITIAL_DATA);
   const [hasRecentChat, setHasRecentChat] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [currentPlan, setCurrentPlan] = useState<PlanTier>("MOTOR");
+  const [refreshQueries, setRefreshQueries] = useState(0);
   const { openChat, isOpen: isChatOpen } = useChat();
+
+  // Cargar usuario y plan
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const profile = await apiGet<User>("/api/auth/me");
+        setUser(profile);
+        const normalized = (profile.plan_tier?.toUpperCase() || "MOTOR") as PlanTier;
+        setCurrentPlan(normalized);
+      } catch (error) {
+        if (error instanceof ApiError && error.status !== 401) {
+          console.error("Error loading user data:", error);
+        }
+        // 401 errors are handled automatically by api-client
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   // Verificar si hay historial de chat reciente
   useEffect(() => {
@@ -283,18 +317,78 @@ export default function DataMiningPage() {
     );
   };
 
+  const handleQueryLaunched = (queryId: number) => {
+    // Forzar refresh de la lista de queries
+    setRefreshQueries((prev) => prev + 1);
+  };
+
   return (
-    <div className="relative min-h-screen">
-      {/* Dashboard siempre renderizado de fondo */}
-      <div
-        className={cn(
-          "transition-all duration-1000",
-          status !== "unlocked"
-            ? "blur-xl opacity-30 scale-95 pointer-events-none h-screen overflow-hidden"
-            : "blur-0 opacity-100 scale-100"
-        )}
-      >
-        <DashboardGrid data={data} onNewAnalysis={resetToLocked} />
+    <div className="relative min-h-screen bg-slate-950">
+      {/* Sección de Control (CEREBRO+) - Arriba del Dashboard */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-2">
+            <DatabaseZap className="h-8 w-8 text-violet-400" />
+            <h1 className="text-3xl font-bold text-white">El Radar - Data Mining</h1>
+          </div>
+          <p className="text-slate-400">
+            Inteligencia de mercado en tiempo real. Extrae datos estructurados usando Brave Search API y análisis con IA.
+          </p>
+        </div>
+
+        {/* Formulario de Lanzamiento (Gated) */}
+        <FeatureGate
+          requiredPlan="CEREBRO"
+          currentPlan={currentPlan}
+          title="Lanzar Extracción de Datos"
+          description="Esta funcionalidad requiere el plan CEREBRO para acceder a extracciones de datos en tiempo real."
+          className="mb-8"
+        >
+          <QueryLaunchForm onQueryLaunched={handleQueryLaunched} />
+        </FeatureGate>
+
+        {/* Lista de Queries (Gated) */}
+        <FeatureGate
+          requiredPlan="CEREBRO"
+          currentPlan={currentPlan}
+          title="Historial de Extracciones"
+          description="Visualiza y monitorea todas tus queries de extracción de datos."
+          className="mb-8"
+        >
+          <div className="rounded-xl border border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-6 shadow-lg backdrop-blur">
+            <div className="mb-4 flex items-center gap-2">
+              <Activity className="h-5 w-5 text-violet-400" />
+              <h2 className="text-lg font-semibold text-white">Mis Extracciones</h2>
+            </div>
+            <ExtractionStatusList
+              key={refreshQueries}
+              onStatusUpdate={(queryId) => {
+                // Recargar queries cuando cambie el estado
+                setRefreshQueries((prev) => prev + 1);
+              }}
+            />
+          </div>
+        </FeatureGate>
+      </div>
+
+      {/* Dashboard Demo (Siempre visible) */}
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-white mb-2">Vista Previa del Dashboard</h2>
+          <p className="text-slate-400 text-sm">
+            Esta es una vista previa del tipo de análisis que puedes generar con el plan CEREBRO.
+          </p>
+        </div>
+        <div
+          className={cn(
+            "transition-all duration-1000",
+            status !== "unlocked"
+              ? "blur-xl opacity-30 scale-95 pointer-events-none"
+              : "blur-0 opacity-100 scale-100"
+          )}
+        >
+          <DashboardGrid data={data} onNewAnalysis={resetToLocked} />
+        </div>
       </div>
 
       {/* CAPA 1: LOCK SCREEN */}
@@ -350,7 +444,7 @@ export default function DataMiningPage() {
           </div>
         </div>
       )}
-    </div>
+      </div>
   );
 }
 
@@ -452,10 +546,10 @@ function DashboardGrid({
               Desbloquea análisis avanzados y estrategias personalizadas
             </p>
             <Link
-              href="/plans"
+              href="/#pricing"
               className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-lg font-bold text-sm transition-all shadow-lg shadow-violet-900/40 flex items-center justify-center gap-2"
             >
-              Desbloquear Plan
+              Actualizar a Partner
               <ArrowRight className="w-4 h-4" />
             </Link>
           </div>

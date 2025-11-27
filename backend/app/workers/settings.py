@@ -61,12 +61,18 @@ class WorkerSettings:
     from app.workers.tasks.ai_inference import process_ai_inference
     from app.workers.tasks.email_reports import send_email_report
     from app.workers.tasks.data_mining import process_data_mining
+    from app.workers.tasks.analytics import track_feature_use
+    from app.workers.tasks.content_tasks import generate_influencer_content
+    from app.workers.tasks.extraction_tasks import launch_deep_extraction
     
     functions = [
         heavy_background_task,
         process_ai_inference,
         send_email_report,
         process_data_mining,
+        track_feature_use,
+        generate_influencer_content,
+        launch_deep_extraction,
     ]
     
     # ============================================

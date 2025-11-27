@@ -79,7 +79,9 @@ class SelectiveCORSMiddleware(BaseHTTPMiddleware):
   
   # Orígenes permitidos para endpoints autenticados (B.A.I. Platform)
   TRUSTED_ORIGINS = [
-    "http://localhost:3000",  # Development
+    "http://localhost:3000",  # Development (Next.js default)
+    "http://127.0.0.1:3000",  # Development (alternative localhost)
+    "http://localhost:3001",  # Development (alternative port)
     "https://baibussines.com",  # Production (B.A.I. Platform)
     "https://www.baibussines.com",  # Production (con www)
   ]
@@ -90,40 +92,67 @@ class SelectiveCORSMiddleware(BaseHTTPMiddleware):
     # Determinar si es endpoint público o autenticado
     is_public_widget = request.url.path == self.PUBLIC_WIDGET_PATH
     
+    # Detectar entorno de desarrollo
+    is_dev_environment = (
+      settings.ENVIRONMENT.lower() == "development" or 
+      settings.DEBUG or
+      settings.ENVIRONMENT.lower() == "dev"
+    )
+    
     # Preparar headers CORS según el tipo de endpoint
     if is_public_widget:
       # Endpoint público: permitir cualquier origen (multi-tenencia)
       cors_headers = {
         "Access-Control-Allow-Origin": origin if origin else "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
         "Access-Control-Allow-Headers": "*",
         "Access-Control-Allow-Credentials": "false",
       }
     else:
-      # Endpoints autenticados: solo orígenes confiables
-      if origin and origin in self.TRUSTED_ORIGINS:
-        cors_headers = {
-          "Access-Control-Allow-Origin": origin,
-          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-          "Access-Control-Allow-Headers": "*",
-          "Access-Control-Allow-Credentials": "true",
-        }
+      # Endpoints autenticados
+      cors_headers = {}
+      
+      # En desarrollo: permitir cualquier localhost para facilitar debugging
+      if is_dev_environment:
+        if origin and (origin.startswith("http://localhost:") or origin.startswith("http://127.0.0.1:")):
+          cors_headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+          }
+        elif not origin:
+          # Si no hay header Origin (petición desde mismo origen o herramienta como curl)
+          # En desarrollo, permitir cualquier origen
+          cors_headers = {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "false",
+          }
       else:
-        # Origen no confiable: no permitir CORS (pero no bloquear la petición)
-        # El endpoint autenticado rechazará si no hay token válido
-        cors_headers = {}
+        # En producción: solo orígenes confiables
+        if origin and origin in self.TRUSTED_ORIGINS:
+          cors_headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+          }
     
     # Manejar preflight OPTIONS
     if request.method == "OPTIONS":
-      response = Response()
-      response.headers.update(cors_headers)
+      response = Response(status_code=200)
+      if cors_headers:
+        response.headers.update(cors_headers)
       return response
     
     # Procesar la petición normal
     response = await call_next(request)
     
-    # Añadir headers CORS a la respuesta
-    response.headers.update(cors_headers)
+    # Añadir headers CORS a la respuesta (siempre, incluso si está vacío)
+    if cors_headers:
+      response.headers.update(cors_headers)
     
     return response
 

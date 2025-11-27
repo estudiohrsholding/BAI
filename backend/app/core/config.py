@@ -13,6 +13,9 @@ class Settings(BaseSettings):
   # Stripe Configuration
   STRIPE_API_KEY: str | None = None
   STRIPE_WEBHOOK_SECRET: str | None = None
+  STRIPE_PRICE_MOTOR: str | None = None  # Stripe Price ID para plan MOTOR
+  STRIPE_PRICE_CEREBRO: str | None = None  # Stripe Price ID para plan CEREBRO
+  STRIPE_PRICE_PARTNER: str | None = None  # Stripe Price ID para plan PARTNER
   DOMAIN: str = "https://baibussines.com"
   
   # RBAC Configuration

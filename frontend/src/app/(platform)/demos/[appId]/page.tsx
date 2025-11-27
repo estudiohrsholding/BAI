@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { APP_CATALOG } from "../../software/constants";
+import { APP_CATALOG } from "../../ecosistema/constants";
 import { ArrowLeft, User, Store, ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -42,7 +42,7 @@ export default function DemoPage({ params }: { params: { appId: string } }) {
           {/* Identidad de la App Actual */}
           <div className="flex items-center gap-3">
             <Link
-              href="/software"
+              href="/ecosistema"
               className="p-2 hover:bg-slate-800 rounded-full transition-colors text-slate-400 hover:text-white"
             >
               <ArrowLeft className="h-5 w-5" />

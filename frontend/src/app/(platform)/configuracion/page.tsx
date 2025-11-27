@@ -1,0 +1,759 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  Settings,
+  Link as LinkIcon,
+  Calendar,
+  Mic,
+  DatabaseZap,
+  Activity,
+  Save,
+  Key,
+  Sparkles,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import {
+  apiGet,
+  ApiError,
+  createCampaign,
+  getCampaigns,
+  CampaignCreateRequest,
+  CampaignResponse,
+} from "@/lib/api-client";
+import { FeatureGate, PlanTier } from "@/components/common/FeatureGate";
+import { PlanIndicator } from "@/components/common/PlanIndicator";
+import { Button } from "@/components/atoms/Button";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/Tabs";
+import { CampaignStatusList } from "@/components/content_creator/CampaignStatusList";
+
+interface User {
+  id: number;
+  email: string;
+  full_name: string | null;
+  plan_tier: string;
+  role?: string;
+  is_active: boolean;
+}
+
+export default function ConfiguracionPage() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentPlan, setCurrentPlan] = useState<PlanTier>("MOTOR");
+
+  // Form state for MOTOR (Basic)
+  const [webUrl, setWebUrl] = useState("");
+  const [messengerToken, setMessengerToken] = useState("");
+  const [instagramToken, setInstagramToken] = useState("");
+  const [calendarSync, setCalendarSync] = useState(false);
+
+  // Form state for CEREBRO (Strategy)
+  const [aiTone, setAiTone] = useState("profesional");
+  const [contentRules, setContentRules] = useState("");
+  const [publishingLimits, setPublishingLimits] = useState("5");
+  const [miningFrequency, setMiningFrequency] = useState("monthly");
+
+  // Form state for PARTNER (Content Creator)
+  const [campaignName, setCampaignName] = useState("");
+  const [influencerName, setInfluencerName] = useState("");
+  const [toneOfVoice, setToneOfVoice] = useState("profesional");
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [contentCount, setContentCount] = useState(10);
+  const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
+  const [campaigns, setCampaigns] = useState<CampaignResponse[]>([]);
+  const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const profile = await apiGet<User>("/api/auth/me");
+        setUser(profile);
+        const normalized = (profile.plan_tier?.toUpperCase() || "MOTOR") as PlanTier;
+        setCurrentPlan(normalized);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 401) {
+          router.push("/login");
+        } else {
+          console.error("Error loading user data:", error);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, [router]);
+
+  // Cargar campañas si el usuario es PARTNER
+  useEffect(() => {
+    if (currentPlan === "PARTNER" && user) {
+      loadCampaigns();
+      // Auto-refresh cada 10 segundos para actualizar estados
+      const interval = setInterval(loadCampaigns, 10000);
+      return () => clearInterval(interval);
+    }
+  }, [currentPlan, user]);
+
+  const loadCampaigns = async () => {
+    if (currentPlan !== "PARTNER") return;
+    
+    try {
+      setIsLoadingCampaigns(true);
+      const response = await getCampaigns(50, 0);
+      setCampaigns(response.campaigns);
+    } catch (error) {
+      if (error instanceof ApiError && error.status !== 401) {
+        console.error("Error cargando campañas:", error);
+      }
+    } finally {
+      setIsLoadingCampaigns(false);
+    }
+  };
+
+  const handleSaveBasic = async () => {
+    // TODO: Implementar guardado de configuración básica
+    console.log("Guardando configuración básica:", {
+      webUrl,
+      messengerToken,
+      instagramToken,
+      calendarSync,
+    });
+  };
+
+  const handleSaveStrategy = async () => {
+    // TODO: Implementar guardado de configuración de estrategia
+    console.log("Guardando estrategia:", {
+      aiTone,
+      contentRules,
+      publishingLimits,
+      miningFrequency,
+    });
+  };
+
+  const handleCreateCampaign = async () => {
+    if (!campaignName || !influencerName || selectedPlatforms.length === 0) {
+      alert("Por favor completa todos los campos requeridos");
+      return;
+    }
+
+    try {
+      setIsCreatingCampaign(true);
+      const campaignData: CampaignCreateRequest = {
+        name: campaignName,
+        influencer_name: influencerName,
+        tone_of_voice: toneOfVoice,
+        platforms: selectedPlatforms,
+        content_count: contentCount,
+        scheduled_at: null, // Por ahora, iniciar inmediatamente
+      };
+
+      await createCampaign(campaignData);
+      
+      // Limpiar formulario
+      setCampaignName("");
+      setInfluencerName("");
+      setToneOfVoice("profesional");
+      setSelectedPlatforms([]);
+      setContentCount(10);
+      
+      // Recargar lista de campañas
+      await loadCampaigns();
+      
+      alert("Campaña creada exitosamente. El contenido se está generando en segundo plano.");
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 403) {
+          alert("Esta funcionalidad requiere el plan PARTNER. Actualiza tu suscripción.");
+        } else {
+          alert(`Error al crear campaña: ${error.message}`);
+        }
+      } else {
+        alert("Error inesperado al crear la campaña");
+      }
+    } finally {
+      setIsCreatingCampaign(false);
+    }
+  };
+
+  const togglePlatform = (platform: string) => {
+    setSelectedPlatforms((prev) =>
+      prev.includes(platform)
+        ? prev.filter((p) => p !== platform)
+        : [...prev, platform]
+    );
+  };
+
+  const getStatusColor = (status: string) => {
+    const colors: Record<string, string> = {
+      pending: "text-slate-400 bg-slate-500/20 border-slate-500/30",
+      in_progress: "text-amber-400 bg-amber-500/20 border-amber-500/30",
+      completed: "text-emerald-400 bg-emerald-500/20 border-emerald-500/30",
+      failed: "text-red-400 bg-red-500/20 border-red-500/30",
+      cancelled: "text-slate-500 bg-slate-600/20 border-slate-600/30",
+    };
+    return colors[status] || colors.pending;
+  };
+
+  const getStatusLabel = (status: string) => {
+    const labels: Record<string, string> = {
+      pending: "Pendiente",
+      in_progress: "En Progreso",
+      completed: "Completada",
+      failed: "Fallida",
+      cancelled: "Cancelada",
+    };
+    return labels[status] || status;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
+            <Settings className="h-6 w-6 text-violet-400" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-white">Configuración Maestra</h1>
+            <p className="text-sm text-slate-400">Cargando configuración...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-slate-800 border border-slate-700">
+            <Settings className="h-6 w-6 text-violet-400" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-white">Configuración Maestra</h1>
+            <p className="text-sm text-slate-400">
+              Gestiona todos los ajustes de tu plataforma según tu plan
+            </p>
+          </div>
+        </div>
+        {user && <PlanIndicator requiredPlan={currentPlan} currentPlan={currentPlan} />}
+      </div>
+
+      {/* Tabs Navigation */}
+      <Tabs defaultValue="operaciones">
+        <TabsList>
+          <TabsTrigger value="operaciones" icon={LinkIcon}>
+            Operaciones Básicas
+          </TabsTrigger>
+          <TabsTrigger value="estrategia" icon={Mic}>
+            Inteligencia Estratégica
+          </TabsTrigger>
+          <TabsTrigger value="datos" icon={DatabaseZap}>
+            Núcleo de Datos
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Tab 1: Operaciones Básicas (MOTOR) - Always Visible */}
+        <TabsContent value="operaciones">
+          <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-slate-900/50 p-6 shadow-lg backdrop-blur">
+            <div className="mb-4 flex items-center gap-2">
+              <LinkIcon className="h-5 w-5 text-emerald-400" />
+              <h2 className="text-lg font-semibold text-white">Conexiones Esenciales</h2>
+              <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2 py-1 text-xs font-medium text-emerald-400">
+                Plan Motor
+              </span>
+            </div>
+            <p className="mb-6 text-sm text-slate-400">
+              Configura las URLs y tokens necesarios para operaciones básicas y flujos de mensajería.
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  URL de tu Web/App
+                </label>
+                <input
+                  type="url"
+                  value={webUrl}
+                  onChange={(e) => setWebUrl(e.target.value)}
+                  placeholder="https://tu-dominio.com"
+                  className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  URL donde se embederá el widget de chat o automatizaciones
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Token de Mensajería (WhatsApp/Messenger)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={messengerToken}
+                    onChange={(e) => setMessengerToken(e.target.value)}
+                    placeholder="••••••••••••••••"
+                    className="flex-1 rounded-md border border-slate-700 bg-slate-800 px-3 py-2 font-mono text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  />
+                  <Button variant="outline" size="md" onClick={() => setMessengerToken("")}>
+                    Limpiar
+                  </Button>
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  Token para conectar con servicios de mensajería (WhatsApp Business API, etc.)
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Token de Instagram (Opcional)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="password"
+                    value={instagramToken}
+                    onChange={(e) => setInstagramToken(e.target.value)}
+                    placeholder="••••••••••••••••"
+                    className="flex-1 rounded-md border border-slate-700 bg-slate-800 px-3 py-2 font-mono text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  />
+                  <Button variant="outline" size="md" onClick={() => setInstagramToken("")}>
+                    Limpiar
+                  </Button>
+                </div>
+                <p className="mt-1 text-xs text-slate-500">
+                  Token para automatizar publicaciones en Instagram
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Sincronización de Calendario
+                </label>
+                <div className="flex items-center justify-between rounded-md border border-slate-700 bg-slate-800 px-4 py-3">
+                  <div>
+                    <p className="text-sm font-medium text-white">Google Calendar Sync</p>
+                    <p className="text-xs text-slate-400">
+                      Sincroniza eventos y citas automáticamente
+                    </p>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={calendarSync}
+                    onChange={(e) => setCalendarSync(e.target.checked)}
+                    className="h-4 w-4 rounded border-slate-700 bg-slate-800 text-emerald-600 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <Button
+                variant="primary"
+                size="md"
+                onClick={handleSaveBasic}
+                className="flex items-center gap-2"
+              >
+                <Save className="h-4 w-4" />
+                Guardar Configuración Básica
+              </Button>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Tab 2: Inteligencia Estratégica (CEREBRO) - Gated */}
+        <TabsContent value="estrategia">
+          <FeatureGate
+            requiredPlan="CEREBRO"
+            currentPlan={currentPlan}
+            title="Inteligencia Estratégica"
+            description="Control fino sobre la agencia de marketing IA y reglas de Data Mining."
+          >
+            <div className="rounded-xl border border-violet-500/30 bg-gradient-to-br from-violet-500/10 to-fuchsia-500/10 p-6 shadow-lg backdrop-blur">
+              <div className="mb-4 flex items-center gap-2">
+                <Mic className="h-5 w-5 text-violet-400" />
+                <h2 className="text-lg font-semibold text-white">Ajustes de Marketing IA</h2>
+                <span className="rounded-full bg-violet-500/20 border border-violet-500/30 px-2 py-1 text-xs font-medium text-violet-400">
+                  Plan Cerebro
+                </span>
+              </div>
+              <p className="mb-6 text-sm text-slate-400">
+                Configura el tono de voz de la IA, reglas de publicación y límites de contenido.
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Tono de Voz de la IA
+                  </label>
+                  <select
+                    value={aiTone}
+                    onChange={(e) => setAiTone(e.target.value)}
+                    className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  >
+                    <option value="profesional">Profesional</option>
+                    <option value="amigable">Amigable</option>
+                    <option value="técnico">Técnico</option>
+                    <option value="creativo">Creativo</option>
+                    <option value="empresarial">Empresarial</option>
+                  </select>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Define cómo debe comunicarse la IA en tus campañas y contenido
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Reglas de Publicación
+                  </label>
+                  <textarea
+                    value={contentRules}
+                    onChange={(e) => setContentRules(e.target.value)}
+                    placeholder="Ej: No mencionar competidores. Enfocarse en beneficios del cliente. Usar emojis moderadamente."
+                    rows={4}
+                    className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Reglas específicas que la IA debe seguir al generar y publicar contenido
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Límites de Publicación Diaria
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={publishingLimits}
+                    onChange={(e) => setPublishingLimits(e.target.value)}
+                    className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  />
+                  <p className="mt-1 text-xs text-slate-500">
+                    Número máximo de publicaciones automáticas por día
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Frecuencia de Data Mining
+                  </label>
+                  <select
+                    value={miningFrequency}
+                    onChange={(e) => setMiningFrequency(e.target.value)}
+                    className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
+                  >
+                    <option value="weekly">Semanal</option>
+                    <option value="monthly">Mensual</option>
+                    <option value="quarterly">Trimestral</option>
+                  </select>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Con qué frecuencia generar reportes de análisis de mercado
+                  </p>
+                </div>
+
+                <Button
+                  variant="primary"
+                  size="md"
+                  onClick={handleSaveStrategy}
+                  className="flex items-center gap-2"
+                >
+                  <Save className="h-4 w-4" />
+                  Guardar Estrategia
+                </Button>
+              </div>
+            </div>
+          </FeatureGate>
+        </TabsContent>
+
+        {/* Tab 3: Núcleo de Datos y Desarrollo (PARTNER) - Highest Gate */}
+        <TabsContent value="datos">
+          <FeatureGate
+            requiredPlan="PARTNER"
+            currentPlan={currentPlan}
+            title="AI Influencer Creator"
+            description="Crea y programa campañas de contenido generado por IA para influencers virtuales."
+          >
+            <div className="space-y-6">
+              {/* Formulario de Creación de Campaña */}
+              <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-yellow-500/10 p-6 shadow-lg backdrop-blur">
+                <div className="mb-4 flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-amber-400" />
+                  <h2 className="text-lg font-semibold text-white">Crear Nueva Campaña</h2>
+                  <span className="rounded-full bg-amber-500/20 border border-amber-500/30 px-2 py-1 text-xs font-medium text-amber-400">
+                    Plan Partner
+                  </span>
+                </div>
+                <p className="mb-6 text-sm text-slate-400">
+                  Define una campaña de contenido para tu influencer IA. El contenido se generará
+                  automáticamente usando DALL-E 3, HeyGen y Gemini.
+                </p>
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        Nombre de la Campaña *
+                      </label>
+                      <input
+                        type="text"
+                        value={campaignName}
+                        onChange={(e) => setCampaignName(e.target.value)}
+                        placeholder="Ej: Campaña Q1 2025"
+                        className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-300 mb-2">
+                        Nombre del Influencer IA *
+                      </label>
+                      <input
+                        type="text"
+                        value={influencerName}
+                        onChange={(e) => setInfluencerName(e.target.value)}
+                        placeholder="Ej: TechGuru_AI"
+                        className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Tono de Voz *
+                    </label>
+                    <select
+                      value={toneOfVoice}
+                      onChange={(e) => setToneOfVoice(e.target.value)}
+                      className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    >
+                      <option value="profesional">Profesional</option>
+                      <option value="casual">Casual</option>
+                      <option value="humorístico">Humorístico</option>
+                      <option value="inspiracional">Inspiracional</option>
+                      <option value="técnico">Técnico</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Plataformas de Destino *
+                    </label>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {["Instagram", "TikTok", "YouTube", "Twitter"].map((platform) => (
+                        <button
+                          key={platform}
+                          type="button"
+                          onClick={() => togglePlatform(platform)}
+                          className={cn(
+                            "rounded-lg border px-4 py-2 text-sm font-medium transition-all",
+                            selectedPlatforms.includes(platform)
+                              ? "border-amber-500 bg-amber-500/20 text-amber-400"
+                              : "border-slate-700 bg-slate-800 text-slate-400 hover:border-slate-600"
+                          )}
+                        >
+                          {platform}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="mt-2 text-xs text-slate-500">
+                      Selecciona al menos una plataforma donde se publicará el contenido
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Número de Piezas de Contenido
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="100"
+                      value={contentCount}
+                      onChange={(e) => setContentCount(parseInt(e.target.value) || 10)}
+                      className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Tiempo estimado: {contentCount * 15} segundos (15 segundos por pieza)
+                    </p>
+                  </div>
+
+                  <Button
+                    variant="primary"
+                    size="lg"
+                    onClick={handleCreateCampaign}
+                    disabled={isCreatingCampaign || !campaignName || !influencerName || selectedPlatforms.length === 0}
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
+                  >
+                    {isCreatingCampaign ? (
+                      <>
+                        <Activity className="h-4 w-4 animate-spin" />
+                        Creando Campaña...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4" />
+                        Crear y Programar Campaña
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Lista de Campañas */}
+              <div className="rounded-xl border border-amber-500/30 bg-gradient-to-br from-amber-500/10 to-yellow-500/10 p-6 shadow-lg backdrop-blur">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-5 w-5 text-amber-400" />
+                    <h2 className="text-lg font-semibold text-white">Mis Campañas</h2>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={loadCampaigns}
+                    disabled={isLoadingCampaigns}
+                  >
+                    {isLoadingCampaigns ? "Cargando..." : "Actualizar"}
+                  </Button>
+                </div>
+
+                {isLoadingCampaigns && campaigns.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Activity className="h-8 w-8 animate-spin text-amber-400 mx-auto mb-2" />
+                    <p className="text-sm text-slate-400">Cargando campañas...</p>
+                  </div>
+                ) : campaigns.length === 0 ? (
+                  <div className="text-center py-8">
+                    <Sparkles className="h-12 w-12 text-amber-400/50 mx-auto mb-4" />
+                    <p className="text-sm text-slate-400">
+                      No tienes campañas aún. Crea tu primera campaña arriba.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {campaigns.map((campaign) => (
+                      <div
+                        key={campaign.id}
+                        className="rounded-lg border border-slate-800 bg-slate-900/50 p-4 hover:bg-slate-900/70 transition-colors"
+                      >
+                        {/* Header con nombre y estado básico */}
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="text-base font-semibold text-white">
+                                {campaign.name}
+                              </h3>
+                              <span
+                                className={cn(
+                                  "rounded-full border px-2 py-0.5 text-xs font-medium",
+                                  getStatusColor(campaign.status)
+                                )}
+                              >
+                                {getStatusLabel(campaign.status)}
+                              </span>
+                            </div>
+                            <p className="text-sm text-slate-400">
+                              Influencer: <span className="text-slate-300">{campaign.influencer_name}</span> | Tono:{" "}
+                              <span className="text-slate-300">{campaign.tone_of_voice}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Status Tracker Component (Polling cada 5 segundos) */}
+                        {campaign.arq_job_id && (
+                          <div className="mb-3">
+                            <CampaignStatusList
+                              campaignId={campaign.id}
+                              campaignName={campaign.name}
+                              onStatusUpdate={(status) => {
+                                // Actualizar estado local si el job cambió
+                                if (status.campaign_status !== campaign.status) {
+                                  // Recargar lista para sincronizar con DB
+                                  loadCampaigns();
+                                }
+                              }}
+                            />
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
+                          <span>
+                            Plataformas: {campaign.platforms.join(", ")}
+                          </span>
+                          <span>•</span>
+                          <span>{campaign.content_count} piezas</span>
+                        </div>
+
+                        {/* Progress Bar (fallback si no hay job_id) */}
+                        {!campaign.arq_job_id && campaign.status === "in_progress" && (
+                          <div className="mb-3">
+                            <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
+                              <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-500 animate-pulse" style={{ width: "60%" }} />
+                            </div>
+                            <p className="text-xs text-slate-400 mt-1">
+                              Generando contenido... Esto puede tardar varios minutos.
+                            </p>
+                          </div>
+                        )}
+
+                        {campaign.status === "completed" && campaign.generated_content && (
+                          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 mb-3">
+                            <p className="text-xs font-medium text-emerald-400 mb-2">
+                              ✓ Contenido Generado
+                            </p>
+                            <div className="space-y-1 text-xs text-slate-300">
+                              {Object.entries(campaign.generated_content.platforms || {}).map(
+                                ([platform, content]: [string, any]) => (
+                                  <div key={platform}>
+                                    <span className="text-slate-400">{platform}:</span>{" "}
+                                    {Array.isArray(content) ? content.length : 0} piezas
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {campaign.error_message && (
+                          <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3">
+                            <p className="text-xs font-medium text-red-400">
+                              Error: {campaign.error_message}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex items-center justify-between text-xs text-slate-500">
+                          <span>
+                            Creada: {new Date(campaign.created_at).toLocaleDateString("es-ES")}
+                          </span>
+                          {campaign.completed_at && (
+                            <span>
+                              Completada: {new Date(campaign.completed_at).toLocaleDateString("es-ES")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </FeatureGate>
+        </TabsContent>
+      </Tabs>
+
+      {/* Info Footer */}
+      <div className="rounded-xl border border-slate-800 bg-slate-900/40 p-4">
+        <p className="text-xs text-slate-400 text-center">
+          Las configuraciones se guardan automáticamente. Para más opciones,{" "}
+          <Link href="/#pricing" className="text-violet-400 hover:text-violet-300 underline">
+            actualiza tu plan
+          </Link>
+          .
+        </p>
+      </div>
+    </div>
+  );
+}

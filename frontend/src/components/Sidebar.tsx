@@ -29,8 +29,8 @@ const navItems: NavItem[] = [
     icon: Workflow,
   },
   {
-    label: "Software Studio",
-    href: "/software",
+    label: "Ecosistema",
+    href: "/ecosistema",
     icon: AppWindow,
   },
   {
@@ -39,8 +39,8 @@ const navItems: NavItem[] = [
     icon: DatabaseZap,
   },
   {
-    label: "Settings",
-    href: "/settings",
+    label: "Configuración",
+    href: "/configuracion",
     icon: Settings,
   },
 ];

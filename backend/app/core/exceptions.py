@@ -40,6 +40,14 @@ class UnauthorizedError(BAIException):
         super().__init__(message, status_code=401)
 
 
+class FeatureForbiddenError(BAIException):
+    """Intento de acceso a una funcionalidad no incluida en el plan."""
+    
+    def __init__(self, feature: str, required_plan: str):
+        message = f"La funcionalidad '{feature}' requiere el plan {required_plan}. Actualiza tu suscripción para continuar."
+        super().__init__(message, status_code=403)
+
+
 # Global exception handlers (se registran en main.py)
 async def bai_exception_handler(request: Request, exc: BAIException):
     """Handler para excepciones de B.A.I."""

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
-from app.api.deps import get_current_user
+from app.api.deps import requires_feature
 from app.core.database import get_session
 from app.models.log import SearchLog
 from app.models.user import User
@@ -18,7 +18,7 @@ class MiningReportRequest(BaseModel):
 
 @router.get("/logs")
 async def get_search_logs(
-  current_user: User = Depends(get_current_user),
+  current_user: User = Depends(requires_feature("access_mining")),
   session: Session = Depends(get_session)
 ) -> list[dict]:
   """
@@ -57,7 +57,7 @@ async def get_search_logs(
 @router.post("/mining-report", response_model=MiningReport)
 async def create_mining_report(
   request: MiningReportRequest,
-  current_user: User = Depends(get_current_user),
+  current_user: User = Depends(requires_feature("access_mining")),
   session: Session = Depends(get_session)
 ) -> MiningReport:
   """

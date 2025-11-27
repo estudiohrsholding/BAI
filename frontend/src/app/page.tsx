@@ -2,9 +2,48 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Bot, Code, DatabaseZap, ArrowRight, CheckCircle, Menu, X } from "lucide-react";
-import { PricingSection } from "@/components/sections/PricingSection";
+import {
+  Bot,
+  Code,
+  DatabaseZap,
+  ArrowRight,
+  CheckCircle,
+  Menu,
+  X,
+  Brain,
+  Sparkles,
+  Mic,
+} from "lucide-react";
 import { BaiLogo } from "@/components/ui/BaiLogo";
+import { PricingTable } from "@/components/marketing/PricingTable";
+import { cn } from "@/lib/utils";
+
+const BIO_STACK = [
+  {
+    name: "Motor",
+    alias: "El Cuerpo",
+    description: "Automatiza operaciones y libera horas de equipo con flujos preconstruidos.",
+    bullets: ["Workflows n8n", "Software Studio", "Playbooks operativos"],
+    accent: "from-emerald-500/20 to-emerald-900/10",
+    icon: Bot,
+  },
+  {
+    name: "Cerebro",
+    alias: "La Voz",
+    description: "Crea contenido estratégico y libera campañas con IA supervisada.",
+    bullets: ["Content Studio", "Prompts curados", "Workers creativos"],
+    accent: "from-violet-500/20 to-violet-900/10",
+    icon: Mic,
+  },
+  {
+    name: "Partner",
+    alias: "El Cerebro",
+    description: "Data Mining continuo, squads embebidos y decisiones apoyadas en insights.",
+    bullets: ["Brave Search + Gemini", "Radar competitivo", "CSM + Arquitectura"],
+    accent: "from-sky-500/20 to-slate-900/10",
+    icon: Brain,
+  },
+];
 
 export default function MarketingPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -73,19 +112,37 @@ export default function MarketingPage() {
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-4 sm:px-6 lg:px-8">
         <div className="container mx-auto max-w-6xl">
-          <div className="text-center space-y-8">
+          <div className="space-y-10 text-center">
             {/* Headline */}
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold leading-tight">
-              No contrates software.{" "}
+              Partner as a Service para escalar verticales.
               <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                Contrata un Socio.
+                {" "}
+                Construimos, operamos y optimizamos contigo.
               </span>
             </h1>
 
             {/* Subheadline */}
             <p className="text-xl sm:text-2xl text-slate-300 max-w-3xl mx-auto">
-              Automatización, Desarrollo y Minería de Datos en una sola plataforma inteligente.
+              Integra el Motor (Automatización), la Voz (Creatividad) y el Cerebro (Inteligencia) en
+              un solo contrato. Radical Simplicity para pasar de idea a crecimiento.
             </p>
+
+            <div className="grid gap-4 sm:grid-cols-3 text-left">
+              {[
+                { label: "Motor", copy: "Automatiza operaciones y software de canal" },
+                { label: "Cerebro", copy: "IA creativa + workers asíncronos supervisados" },
+                { label: "Partner", copy: "Data Mining y squads embebidos" },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-2xl border border-slate-800 bg-slate-900/40 p-4 text-slate-300"
+                >
+                  <p className="text-sm font-semibold text-slate-100">{item.label}</p>
+                  <p className="text-sm text-slate-400">{item.copy}</p>
+                </div>
+              ))}
+            </div>
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
@@ -96,9 +153,12 @@ export default function MarketingPage() {
                 Empezar Gratis
                 <ArrowRight className="h-5 w-5" />
               </Link>
-              <button className="px-8 py-4 rounded-lg border-2 border-slate-600 text-slate-300 font-semibold text-lg hover:border-slate-500 hover:text-white transition-all">
-                Ver Demo
-              </button>
+              <Link
+                href="/#pricing"
+                className="px-8 py-4 rounded-lg border-2 border-slate-600 text-slate-300 font-semibold text-lg hover:border-slate-500 hover:text-white transition-all"
+              >
+                Ver Planes
+              </Link>
             </div>
 
             {/* Promotional Video */}
@@ -120,8 +180,51 @@ export default function MarketingPage() {
         </div>
       </section>
 
+      {/* Biological Stack */}
+      <section className="py-20 px-4 sm:px-6 lg:px-8 border-y border-slate-900/40">
+        <div className="container mx-auto max-w-6xl space-y-12">
+          <div className="text-center space-y-4">
+            <p className="inline-flex items-center gap-2 rounded-full border border-slate-800 px-4 py-1 text-xs uppercase tracking-[0.3em] text-slate-400">
+              <Sparkles className="h-3 w-3" /> Biological Stack
+            </p>
+            <h2 className="text-4xl font-bold text-white">Del cuerpo al cerebro.</h2>
+            <p className="text-slate-400 text-lg max-w-3xl mx-auto">
+              Cada plan desbloquea una capa del organismo digital. Empieza con operaciones
+              automatizadas y termina con inteligencia aumentada y squads embebidos.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            {BIO_STACK.map((layer) => (
+              <article
+                key={layer.name}
+                className={cn(
+                  "rounded-3xl border border-slate-800 bg-gradient-to-br p-6 text-left",
+                  layer.accent,
+                )}
+              >
+                <div className="flex items-center gap-3 text-sm font-semibold text-slate-300">
+                  <layer.icon className="h-5 w-5 text-violet-300" />
+                  {layer.alias}
+                </div>
+                <h3 className="mt-4 text-2xl font-bold text-white">{layer.name}</h3>
+                <p className="mt-2 text-slate-300">{layer.description}</p>
+                <ul className="mt-4 space-y-2 text-sm text-slate-200">
+                  {layer.bullets.map((bullet) => (
+                    <li key={bullet} className="flex items-center gap-2">
+                      <CheckCircle className="h-4 w-4 text-emerald-400" />
+                      {bullet}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section */}
-      <PricingSection />
+      <PricingTable />
 
       {/* Social Proof */}
       <section className="py-16 px-4 sm:px-6 lg:px-8 border-y border-slate-800">
@@ -172,8 +275,8 @@ export default function MarketingPage() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/software" className="text-slate-400 hover:text-white transition-colors">
-                    Software Studio
+                  <Link href="/ecosistema" className="text-slate-400 hover:text-white transition-colors">
+                    Ecosistema
                   </Link>
                 </li>
                 <li>
@@ -182,7 +285,7 @@ export default function MarketingPage() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/plans" className="text-slate-400 hover:text-white transition-colors">
+                  <Link href="/#pricing" className="text-slate-400 hover:text-white transition-colors">
                     Plans & Pricing
                   </Link>
                 </li>

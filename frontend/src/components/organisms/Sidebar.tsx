@@ -30,9 +30,9 @@ interface SidebarProps {
 const navItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Automation", href: "/automation", icon: Workflow },
-  { label: "Software Studio", href: "/software", icon: AppWindow },
+  { label: "Ecosistema", href: "/ecosistema", icon: AppWindow },
   { label: "Data Mining", href: "/data-mining", icon: DatabaseZap },
-  { label: "Settings", href: "/settings", icon: Settings },
+  { label: "Configuración", href: "/configuracion", icon: Settings },
 ];
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {

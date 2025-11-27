@@ -70,6 +70,241 @@ export async function getSystemHealth(): Promise<SystemHealth> {
 }
 
 /**
+ * Content Creator API Functions
+ */
+
+export interface CampaignCreateRequest {
+  name: string;
+  influencer_name: string;
+  tone_of_voice: string;
+  platforms: string[];
+  content_count: number;
+  scheduled_at?: string | null;
+}
+
+export interface CampaignResponse {
+  id: number;
+  user_id: number;
+  name: string;
+  influencer_name: string;
+  tone_of_voice: string;
+  platforms: string[];
+  content_count: number;
+  status: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+  scheduled_at: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  generated_content: Record<string, any> | null;
+  error_message: string | null;
+  arq_job_id: string | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface CampaignJobStatusResponse {
+  campaign_id: number;
+  job_id: string | null;
+  job_status: "queued" | "in_progress" | "complete" | "failed" | null;
+  campaign_status: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+  progress: number | null;
+  result: Record<string, any> | null;
+  error: string | null;
+}
+
+export interface CampaignCreatedResponse {
+  campaign_id: number;
+  status: string;
+  message: string;
+  estimated_completion: string | null;
+}
+
+export interface CampaignListResponse {
+  campaigns: CampaignResponse[];
+  total: number;
+}
+
+/**
+ * Crear una nueva campaña de contenido
+ * 
+ * @param data - Datos de la campaña
+ * @returns Respuesta con ID de la campaña creada
+ * @throws ApiError si falla la petición
+ */
+export async function createCampaign(
+  data: CampaignCreateRequest
+): Promise<CampaignCreatedResponse> {
+  return apiPost<CampaignCreatedResponse>("/api/v1/content/new-campaign", data);
+}
+
+/**
+ * Obtener lista de campañas del usuario
+ * 
+ * @param limit - Número máximo de resultados
+ * @param offset - Offset para paginación
+ * @returns Lista de campañas
+ * @throws ApiError si falla la petición
+ */
+export async function getCampaigns(
+  limit: number = 50,
+  offset: number = 0
+): Promise<CampaignListResponse> {
+  return apiGet<CampaignListResponse>(
+    `/api/v1/content/campaigns?limit=${limit}&offset=${offset}`
+  );
+}
+
+/**
+ * Obtener una campaña específica
+ * 
+ * @param campaignId - ID de la campaña
+ * @returns Detalles de la campaña
+ * @throws ApiError si falla la petición
+ */
+export async function getCampaign(campaignId: number): Promise<CampaignResponse> {
+  return apiGet<CampaignResponse>(`/api/v1/content/campaigns/${campaignId}`);
+}
+
+/**
+ * Obtener el estado del job de Arq para una campaña
+ * 
+ * @param campaignId - ID de la campaña
+ * @returns Estado del job y progreso
+ * @throws ApiError si falla la petición
+ */
+export async function getCampaignJobStatus(
+  campaignId: number
+): Promise<CampaignJobStatusResponse> {
+  return apiGet<CampaignJobStatusResponse>(
+    `/api/v1/content/campaigns/${campaignId}/job-status`
+  );
+}
+
+/**
+ * Data Mining API Functions
+ */
+
+export interface ExtractionQueryCreateRequest {
+  search_topic: string;
+  query_metadata?: Record<string, any> | null;
+}
+
+export interface ExtractionQueryResponse {
+  id: number;
+  user_id: number;
+  search_topic: string;
+  status: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+  results: Record<string, any> | null;
+  error_message: string | null;
+  arq_job_id: string | null;
+  started_at: string | null;
+  completed_at: string | null;
+  query_metadata: Record<string, any> | null;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ExtractionQueryStatusResponse {
+  query_id: number;
+  job_id: string | null;
+  job_status: "queued" | "in_progress" | "complete" | "failed" | null;
+  query_status: "pending" | "in_progress" | "completed" | "failed" | "cancelled";
+  progress: number | null;
+  result: Record<string, any> | null;
+  error: string | null;
+}
+
+export interface ExtractionQueryResultsResponse {
+  query_id: number;
+  search_topic: string;
+  results: Record<string, any>;
+  completed_at: string | null;
+  query_metadata: Record<string, any> | null;
+}
+
+export interface LaunchQueryResponse {
+  query_id: number;
+  status: string;
+  message: string;
+  estimated_completion: string | null;
+}
+
+export interface ExtractionQueryListResponse {
+  queries: ExtractionQueryResponse[];
+  total: number;
+}
+
+/**
+ * Lanzar una nueva query de extracción de datos
+ * 
+ * @param data - Datos de la query
+ * @returns Respuesta con ID de la query creada
+ * @throws ApiError si falla la petición
+ */
+export async function launchExtractionQuery(
+  data: ExtractionQueryCreateRequest
+): Promise<LaunchQueryResponse> {
+  return apiPost<LaunchQueryResponse>("/api/v1/data-mining/launch-query", data);
+}
+
+/**
+ * Obtener lista de queries de extracción del usuario
+ * 
+ * @param limit - Número máximo de resultados
+ * @param offset - Offset para paginación
+ * @returns Lista de queries
+ * @throws ApiError si falla la petición
+ */
+export async function getExtractionQueries(
+  limit: number = 50,
+  offset: number = 0
+): Promise<ExtractionQueryListResponse> {
+  return apiGet<ExtractionQueryListResponse>(
+    `/api/v1/data-mining/queries?limit=${limit}&offset=${offset}`
+  );
+}
+
+/**
+ * Obtener una query específica
+ * 
+ * @param queryId - ID de la query
+ * @returns Detalles de la query
+ * @throws ApiError si falla la petición
+ */
+export async function getExtractionQuery(queryId: number): Promise<ExtractionQueryResponse> {
+  return apiGet<ExtractionQueryResponse>(`/api/v1/data-mining/queries/${queryId}`);
+}
+
+/**
+ * Obtener el estado del job de Arq para una query
+ * 
+ * @param queryId - ID de la query
+ * @returns Estado del job y progreso
+ * @throws ApiError si falla la petición
+ */
+export async function getExtractionQueryStatus(
+  queryId: number
+): Promise<ExtractionQueryStatusResponse> {
+  return apiGet<ExtractionQueryStatusResponse>(
+    `/api/v1/data-mining/queries/${queryId}/status`
+  );
+}
+
+/**
+ * Obtener los resultados estructurados de una query completada
+ * 
+ * @param queryId - ID de la query
+ * @returns Resultados estructurados (JSONB) de la extracción
+ * @throws ApiError si falla la petición o la query no está completada
+ */
+export async function getExtractionQueryResults(
+  queryId: number
+): Promise<ExtractionQueryResultsResponse> {
+  return apiGet<ExtractionQueryResultsResponse>(
+    `/api/v1/data-mining/queries/${queryId}/results`
+  );
+}
+
+/**
  * Opciones para peticiones autenticadas
  */
 export interface FetchOptions extends RequestInit {

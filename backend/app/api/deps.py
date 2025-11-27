@@ -1,3 +1,5 @@
+from typing import Callable, Dict, Any, Optional
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -5,7 +7,12 @@ from sqlmodel import Session, select
 
 from app.core.database import get_session
 from app.core.security import SECRET_KEY, ALGORITHM
-from app.models.user import User
+from app.core.exceptions import FeatureForbiddenError
+from app.models.user import (
+  User,
+  PlanTier,
+  PLAN_FEATURE_MATRIX,
+)
 
 # OAuth2 password bearer token URL
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
@@ -67,4 +74,63 @@ async def get_current_user(
     session.refresh(user)
   
   return user
+
+
+PLAN_PRIORITY = [PlanTier.MOTOR, PlanTier.CEREBRO, PlanTier.PARTNER]
+
+
+def _merge_features(user: User) -> Dict[str, Any]:
+  base_features = PLAN_FEATURE_MATRIX.get(user.plan_tier, {})
+  if user.features:
+    return {**base_features, **user.features}
+  return base_features
+
+
+def get_current_plan_features(user: User = Depends(get_current_user)) -> Dict[str, Any]:
+  """
+  Dependency that returns the effective feature flags for the authenticated user.
+  """
+  return _merge_features(user)
+
+
+def _find_required_plan_for_feature(feature_key: str) -> Optional[PlanTier]:
+  for plan in PLAN_PRIORITY:
+    if PLAN_FEATURE_MATRIX.get(plan, {}).get(feature_key):
+      return plan
+  return None
+
+
+def requires_feature(feature_key: str) -> Callable:
+  """
+  Dependency factory that ensures the current user's plan exposes a given feature.
+  """
+  async def _dependency(
+    user: User = Depends(get_current_user),
+  ) -> User:
+    features = _merge_features(user)
+    if not features.get(feature_key, False):
+      required_plan = _find_required_plan_for_feature(feature_key)
+      required_label = required_plan.value if required_plan else "CEREBRO"
+      raise FeatureForbiddenError(
+        feature=feature_key,
+        required_plan=required_label,
+      )
+    return user
+  return _dependency
+
+
+def requires_plan(min_plan: PlanTier) -> Callable:
+  """
+  Dependency factory that enforces a minimum subscription tier.
+  """
+  async def _dependency(
+    user: User = Depends(get_current_user),
+  ) -> User:
+    if PLAN_PRIORITY.index(user.plan_tier) < PLAN_PRIORITY.index(min_plan):
+      raise FeatureForbiddenError(
+        feature="plan_access",
+        required_plan=min_plan.value,
+      )
+    return user
+  return _dependency
 

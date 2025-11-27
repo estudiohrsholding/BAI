@@ -144,6 +144,34 @@ async def check_redis() -> ServiceStatus:
         )
 
 
+async def check_worker_status() -> Dict[str, Any]:
+    """
+    Helper function para obtener el estado del worker.
+    
+    Returns:
+        dict con status y queue_size
+    """
+    try:
+        redis_client = get_redis_client()
+        await redis_client.ping()
+        
+        # Intentar obtener tamaño de la cola
+        try:
+            queue_size = await redis_client.llen("arq:queue")
+        except Exception:
+            queue_size = 0
+        
+        return {
+            "status": "healthy",
+            "queue_size": queue_size
+        }
+    except Exception:
+        return {
+            "status": "down",
+            "queue_size": 0
+        }
+
+
 async def check_worker() -> ServiceStatus:
     """
     Verifica el estado de los workers (Arq).
