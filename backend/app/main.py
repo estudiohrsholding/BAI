@@ -74,8 +74,12 @@ class SelectiveCORSMiddleware(BaseHTTPMiddleware):
   incluso si tienen un JWT válido (robado o filtrado).
   """
   
-  # Endpoint público del widget (permite cualquier origen)
-  PUBLIC_WIDGET_PATH = "/api/v1/widget/chat"
+  # Endpoints públicos (permite cualquier origen de producción)
+  PUBLIC_PATHS = [
+    "/api/v1/widget/chat",  # Widget público
+    "/api/auth/register",   # Registro público
+    "/api/auth/token",      # Login público
+  ]
   
   # Orígenes permitidos para endpoints autenticados (B.A.I. Platform)
   TRUSTED_ORIGINS = [
@@ -91,7 +95,7 @@ class SelectiveCORSMiddleware(BaseHTTPMiddleware):
     origin = request.headers.get("origin")
     
     # Determinar si es endpoint público o autenticado
-    is_public_widget = request.url.path == self.PUBLIC_WIDGET_PATH
+    is_public_endpoint = any(request.url.path.startswith(path) for path in self.PUBLIC_PATHS)
     
     # Detectar entorno de desarrollo
     is_dev_environment = (
@@ -101,14 +105,49 @@ class SelectiveCORSMiddleware(BaseHTTPMiddleware):
     )
     
     # Preparar headers CORS según el tipo de endpoint
-    if is_public_widget:
-      # Endpoint público: permitir cualquier origen (multi-tenencia)
-      cors_headers = {
-        "Access-Control-Allow-Origin": origin if origin else "*",
-        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
-        "Access-Control-Allow-Headers": "*",
-        "Access-Control-Allow-Credentials": "false",
-      }
+    if is_public_endpoint:
+      # Endpoints públicos: SIEMPRE permitir orígenes de producción y desarrollo
+      # Esto es crítico para que el registro y login funcionen
+      cors_headers = {}
+      
+      if origin:
+        # Verificar si es un origen de producción
+        is_production_origin = (
+          origin.startswith("https://baibussines.com") or
+          origin.startswith("https://www.baibussines.com") or
+          origin.startswith("https://api.baibussines.com")
+        )
+        # Verificar si es un origen de desarrollo
+        is_dev_origin = (
+          origin.startswith("http://localhost:") or
+          origin.startswith("http://127.0.0.1:")
+        )
+        
+        # Permitir orígenes de producción y desarrollo con credenciales
+        if is_production_origin or is_dev_origin or origin in self.TRUSTED_ORIGINS:
+          cors_headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "true",
+          }
+        else:
+          # Para otros orígenes en endpoints públicos, permitir pero sin credenciales
+          # Esto permite que el widget funcione en cualquier dominio
+          cors_headers = {
+            "Access-Control-Allow-Origin": origin,
+            "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+            "Access-Control-Allow-Headers": "*",
+            "Access-Control-Allow-Credentials": "false",
+          }
+      else:
+        # Sin header Origin: permitir cualquier origen (para herramientas como curl)
+        cors_headers = {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+          "Access-Control-Allow-Headers": "*",
+          "Access-Control-Allow-Credentials": "false",
+        }
     else:
       # Endpoints autenticados
       cors_headers = {}
@@ -159,7 +198,18 @@ class SelectiveCORSMiddleware(BaseHTTPMiddleware):
     # Procesar la petición normal
     response = await call_next(request)
     
-    # Añadir headers CORS a la respuesta (siempre, incluso si está vacío)
+    # Añadir headers CORS a la respuesta
+    # CRÍTICO: Para endpoints públicos, SIEMPRE devolver headers CORS
+    if is_public_endpoint and not cors_headers:
+      # Fallback: Si por alguna razón cors_headers está vacío en un endpoint público,
+      # devolver headers permisivos (esto no debería pasar, pero es un safety net)
+      cors_headers = {
+        "Access-Control-Allow-Origin": origin if origin else "*",
+        "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS, PATCH",
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Credentials": "false",
+      }
+    
     if cors_headers:
       response.headers.update(cors_headers)
     

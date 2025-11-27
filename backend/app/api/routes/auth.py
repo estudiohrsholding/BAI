@@ -14,7 +14,7 @@ from app.core.security import (
   create_access_token,
   ACCESS_TOKEN_EXPIRE_MINUTES
 )
-from app.models.user import User
+from app.models.user import User, PlanTier, SubscriptionStatus
 
 router = APIRouter()
 
@@ -161,7 +161,8 @@ async def register(
     email=user_data.email,
     hashed_password=hashed_password,
     full_name=user_data.full_name,
-    plan_tier="basic",
+    plan_tier=PlanTier.MOTOR,  # Default plan for new users
+    subscription_status=SubscriptionStatus.ACTIVE,
     role=user_role,
     is_active=True
   )
