@@ -24,7 +24,7 @@ from app.models.user import User, PlanTier
 from sqlmodel import Session
 
 
-router = APIRouter(prefix="/api/v1/content", tags=["content"])
+router = APIRouter(prefix="/content", tags=["content"])
 
 
 # Dependency para obtener ContentCreatorService
