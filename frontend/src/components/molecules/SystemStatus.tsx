@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { getSystemHealth, SystemHealth, ServiceStatus } from "@/lib/api-client";
 import { Database, Zap, Bot, Cpu } from "lucide-react";
-import useSWR from "swr";
 
 /**
  * SystemStatus Component
@@ -17,22 +16,35 @@ import useSWR from "swr";
  * Actualiza automáticamente cada 30 segundos.
  */
 export function SystemStatus() {
-  // Usar SWR con polling cada 30 segundos
-  const { data: health, error, isLoading } = useSWR<SystemHealth>(
-    "system-health",
-    getSystemHealth,
-    {
-      refreshInterval: 30000, // Poll cada 30 segundos
-      revalidateOnFocus: false, // No revalidar al cambiar de pestaña
-      revalidateOnReconnect: true, // Revalidar al reconectar
-      shouldRetryOnError: true,
-      errorRetryCount: 3,
-      errorRetryInterval: 2000,
-    }
-  );
+  const [health, setHealth] = useState<SystemHealth | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHealth = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await getSystemHealth();
+        setHealth(data);
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error("No se pudo conectar al sistema"));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Fetch inicial
+    fetchHealth();
+
+    // Poll cada 30 segundos
+    const interval = setInterval(fetchHealth, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
   
   // Convertir error a string
-  const errorMessage = error ? (error instanceof Error ? error.message : "No se pudo conectar al sistema") : null;
+  const errorMessage = error ? error.message : null;
 
   // Determinar estado general
   const overallStatus = health?.status || "unhealthy";

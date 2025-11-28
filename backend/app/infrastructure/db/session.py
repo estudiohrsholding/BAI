@@ -70,6 +70,7 @@ def get_session_dependency():
     Generator function para usar como FastAPI dependency.
     
     Compatible con Depends() de FastAPI.
+    Crea la sesión manualmente y maneja el ciclo de vida correctamente.
     
     Usage:
         @app.get("/example")
@@ -77,8 +78,18 @@ def get_session_dependency():
             # Use session here
             pass
     """
-    with get_session() as session:
+    # IMPORTANTE: NO usar 'with get_session() as session:' porque get_session()
+    # es un @contextmanager que cierra la sesión antes de que FastAPI pueda usarla.
+    # Crear la sesión manualmente y manejar commit/rollback/close.
+    session = Session(engine)
+    try:
         yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()
 
 
 def get_db_session() -> Session:

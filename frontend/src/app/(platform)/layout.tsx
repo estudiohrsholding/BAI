@@ -8,7 +8,6 @@ import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ChatProvider } from "@/context/ChatContext";
 import { DashboardProvider } from "@/context/DashboardContext";
-import { SWRProvider } from "@/providers/SWRProvider";
 
 interface PlatformLayoutProps {
   children: ReactNode;
@@ -22,9 +21,8 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
   const isFullWidth = fullWidthRoutes.some((route) => pathname.startsWith(route));
 
   return (
-    <SWRProvider>
-      <ChatProvider>
-        <DashboardProvider>
+    <ChatProvider>
+      <DashboardProvider>
           <div className="min-h-screen bg-slate-950 text-slate-50 relative overflow-x-hidden">
         {/* Mobile Header */}
         <header className="fixed top-0 left-0 right-0 z-50 flex h-16 items-center justify-between bg-slate-900 border-b border-slate-800 px-4 md:hidden">
@@ -62,6 +60,6 @@ export default function PlatformLayout({ children }: PlatformLayoutProps) {
           </div>
         </DashboardProvider>
       </ChatProvider>
-    </SWRProvider>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 /**
- * useJobStatus Hook - Polling Inteligente con SWR
+ * useJobStatus Hook - Polling Inteligente
  * 
  * Hook personalizado para monitorear el estado de jobs de Arq con polling condicional.
  * Solo hace polling cuando el job está activo (queued, in_progress).
@@ -12,8 +12,7 @@
  * - Menos consumo de batería en móviles
  */
 
-import useSWR from 'swr';
-import { useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 export interface JobStatus {
   job_status?: "queued" | "in_progress" | "complete" | "failed" | null;
@@ -79,63 +78,93 @@ export function useJobStatus<T extends JobStatus = JobStatus>({
   onStatusUpdate,
   disabled = false,
 }: UseJobStatusOptions<T>) {
-  
-  // Key única para este job
-  const swrKey = disabled || !jobId ? null : `job-status-${jobId}`;
-  
-  // Función de fetch para SWR
-  const swrFetcher = useCallback(async (key: string) => {
-    // Extraer ID del key
-    const id = parseInt(key.replace('job-status-', ''), 10);
-    if (!id) return null;
-    return await fetcher(id);
-  }, [fetcher]);
-  
-  // Configuración de SWR con polling condicional
-  const { data, error, isLoading, mutate } = useSWR<T | null>(
-    swrKey,
-    swrFetcher,
-    {
-      // Solo hacer polling si el job está activo
-      refreshInterval: (latestData) => {
-        if (!latestData) return pollInterval; // Si no hay datos, hacer poll
-        
-        // Si está activo, seguir haciendo polling
-        if (isJobActive(latestData)) {
-          return pollInterval;
+  const [data, setData] = useState<T | null>(null);
+  const [error, setError] = useState<Error | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
+
+  // Función para fetch del estado
+  const fetchStatus = useCallback(async () => {
+    if (disabled || !jobId || !isMountedRef.current) return;
+    
+    try {
+      setIsLoading(true);
+      setError(null);
+      const status = await fetcher(jobId);
+      
+      if (!isMountedRef.current) return;
+      
+      setData(status);
+      
+      // Callback cuando los datos cambian
+      if (onStatusUpdate) {
+        onStatusUpdate(status);
+      }
+      
+      // Si el job está completado o fallido, detener polling
+      if (!isJobActive(status)) {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+          intervalRef.current = null;
         }
-        
-        // Si está completado o fallido, detener polling
-        return 0;
-      },
-      
-      // No revalidar al cambiar de pestaña (evita requests innecesarias)
-      revalidateOnFocus: false,
-      
-      // Revalidar al reconectar (útil si se perdió conexión)
-      revalidateOnReconnect: true,
-      
-      // Retry automático en caso de error
-      shouldRetryOnError: true,
-      errorRetryCount: 3,
-      errorRetryInterval: 2000,
-      
-      // Mantener datos anteriores mientras carga nueva data
-      keepPreviousData: true,
+      }
+    } catch (err) {
+      if (!isMountedRef.current) return;
+      setError(err instanceof Error ? err : new Error("Error al obtener estado del job"));
+    } finally {
+      if (isMountedRef.current) {
+        setIsLoading(false);
+      }
     }
-  );
-  
-  // Callback cuando los datos cambian
+  }, [fetcher, jobId, onStatusUpdate, disabled]);
+
+  // Fetch inicial
   useEffect(() => {
-    if (data && onStatusUpdate) {
-      onStatusUpdate(data);
+    isMountedRef.current = true;
+    fetchStatus();
+    
+    return () => {
+      isMountedRef.current = false;
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [fetchStatus]);
+
+  // Polling condicional basado en el estado del job
+  useEffect(() => {
+    if (disabled || !jobId) return;
+    
+    // Si el job está activo, iniciar polling
+    if (data && isJobActive(data)) {
+      if (!intervalRef.current) {
+        intervalRef.current = setInterval(() => {
+          if (isMountedRef.current) {
+            fetchStatus();
+          }
+        }, pollInterval);
+      }
+    } else {
+      // Si no está activo, detener polling
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     }
-  }, [data, onStatusUpdate]);
+    
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [data, pollInterval, fetchStatus, disabled, jobId]);
   
   // Función para forzar actualización manual
   const refresh = useCallback(() => {
-    mutate();
-  }, [mutate]);
+    fetchStatus();
+  }, [fetchStatus]);
   
   // Determinar si el job está activo
   const isActive = data ? isJobActive(data) : false;

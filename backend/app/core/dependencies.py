@@ -27,15 +27,20 @@ from app.infrastructure.cache.redis import CacheService, get_redis_client
 # DATABASE DEPENDENCIES
 # ============================================
 
-def get_db() -> Session:
+def get_db():
     """
     Dependency para obtener una sesión de base de datos.
     
+    Generator function compatible con FastAPI's Depends().
+    NO retorna directamente, sino que yield la sesión.
+    
     Returns:
-        Session: Sesión de SQLModel
+        Generator[Session, None, None]: Generador que yield una Session
     """
-    from app.infrastructure.db.session import get_session
-    return get_session()
+    # Usar get_session_dependency que es un generador correcto para FastAPI
+    # NO usar get_session() directamente porque es un @contextmanager
+    from app.infrastructure.db.session import get_session_dependency
+    yield from get_session_dependency()
 
 
 # Type alias para cleaner annotations

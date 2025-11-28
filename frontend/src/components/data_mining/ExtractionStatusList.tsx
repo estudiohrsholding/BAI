@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, DatabaseZap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -10,7 +10,6 @@ import {
   ApiError,
 } from "@/lib/api-client";
 import { QueryStatusItem } from "./QueryStatusItem";
-import useSWR from "swr";
 
 interface ExtractionStatusListProps {
   onStatusUpdate?: (queryId: number, status: ExtractionQueryStatusResponse) => void;
@@ -29,24 +28,30 @@ export function ExtractionStatusList({
   onStatusUpdate,
   className,
 }: ExtractionStatusListProps) {
-  // Cargar lista de queries con SWR (solo una vez, sin polling)
-  const { data: queriesData, error, isLoading, mutate } = useSWR(
-    "extraction-queries-list",
-    async () => {
+  const [queries, setQueries] = useState<ExtractionQueryResponse[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  const fetchQueries = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
       const response = await getExtractionQueries(50, 0);
-      return response.queries;
-    },
-    {
-      revalidateOnFocus: false, // No revalidar al cambiar de pestaña
-      refreshInterval: 0, // No hacer polling de la lista
+      setQueries(response.queries);
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error("Error al cargar queries"));
+    } finally {
+      setIsLoading(false);
     }
-  );
-  
-  const queries = queriesData || [];
+  };
+
+  useEffect(() => {
+    fetchQueries();
+  }, []);
   
   // Función para refrescar la lista manualmente
   const refreshList = () => {
-    mutate();
+    fetchQueries();
   };
 
 

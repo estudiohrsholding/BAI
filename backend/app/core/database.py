@@ -94,13 +94,15 @@ def get_session():
         pass
   """
   # Usar el engine unificado (mejor configuración de pool)
+  # IMPORTANTE: NO usar 'with Session(engine) as session:' porque cierra la sesión
+  # antes de que FastAPI pueda usarla. Crear manualmente y manejar el ciclo de vida.
   from sqlmodel import Session
-  with Session(engine) as session:
-    try:
-      yield session
-      session.commit()
-    except Exception:
-      session.rollback()
-      raise
-    finally:
-      session.close()
+  session = Session(engine)
+  try:
+    yield session
+    session.commit()
+  except Exception:
+    session.rollback()
+    raise
+  finally:
+    session.close()
