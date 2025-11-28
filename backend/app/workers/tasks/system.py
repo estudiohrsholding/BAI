@@ -38,9 +38,13 @@ async def heavy_background_task(
         }
     
     Example:
-        # Desde un endpoint:
-        from app.workers.queue import enqueue_task
-        job_id = await enqueue_task("heavy_background_task", task_name="data_analysis", duration_seconds=10)
+        # Desde un endpoint (usando pool singleton):
+        from app.core.dependencies import ArqRedisDep
+        
+        @router.post("/endpoint")
+        async def my_endpoint(arq_pool: ArqRedisDep):
+            job = await arq_pool.enqueue_job("heavy_background_task", task_name="data_analysis", duration_seconds=10)
+            job_id = job.job_id
     """
     logger = ctx.get("logger") or logging.getLogger("bai.worker.tasks")
     

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Activity,
   CheckCircle2,
@@ -14,10 +14,10 @@ import { cn } from "@/lib/utils";
 import {
   getCampaignStatus,
   CampaignStatusResponse,
-  ApiError,
   ContentCampaignResponse,
 } from "@/lib/api-client";
 import { CampaignResultViewer } from "./CampaignResultViewer";
+import { useJobStatus } from "@/hooks/useJobStatus";
 
 interface CampaignStatusTrackerProps {
   campaignId: number;
@@ -42,40 +42,24 @@ export function CampaignStatusTracker({
   onStatusUpdate,
   className,
 }: CampaignStatusTrackerProps) {
-  const [jobStatus, setJobStatus] = useState<CampaignStatusResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
-  const fetchJobStatus = async () => {
-    try {
-      const status = await getCampaignStatus(campaignId);
-      setJobStatus(status);
-      setError(null);
-      
-      // Notificar al componente padre si hay callback
-      if (onStatusUpdate) {
-        onStatusUpdate(status);
-      }
-    } catch (err) {
-      if (err instanceof ApiError && err.status !== 401) {
-        setError(err.message || "Error al obtener estado del job");
-      }
-      // 401 errors are handled automatically by api-client
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    // Cargar estado inmediatamente
-    fetchJobStatus();
-
-    // Polling cada 5 segundos
-    const interval = setInterval(fetchJobStatus, 5000);
-
-    return () => clearInterval(interval);
-  }, [campaignId]);
+  // Usar hook de SWR con polling inteligente
+  const {
+    status: jobStatus,
+    isLoading,
+    error: swrError,
+    isActive,
+    isCompleted: swrIsCompleted,
+  } = useJobStatus({
+    fetcher: getCampaignStatus,
+    jobId: campaignId,
+    pollInterval: 5000,
+    onStatusUpdate,
+  });
+  
+  // Convertir error de SWR a string
+  const error = swrError ? (swrError instanceof Error ? swrError.message : "Error al obtener estado del job") : null;
 
   if (isLoading && !jobStatus) {
     return (
@@ -99,6 +83,8 @@ export function CampaignStatusTracker({
   }
 
   const getStatusIcon = () => {
+    if (!jobStatus) return <Clock className="h-4 w-4 text-slate-400" />;
+    
     if (jobStatus.job_status === "complete" || jobStatus.campaign_status === "completed") {
       return <CheckCircle2 className="h-4 w-4 text-emerald-400" />;
     }
@@ -112,6 +98,8 @@ export function CampaignStatusTracker({
   };
 
   const getStatusLabel = () => {
+    if (!jobStatus) return "Pendiente";
+    
     // Priorizar job_status sobre campaign_status para mostrar el estado más actualizado
     const status = jobStatus.job_status || jobStatus.campaign_status;
     
@@ -124,10 +112,12 @@ export function CampaignStatusTracker({
       pending: "Pendiente",
     };
     
-    return labels[status] || String(status);
+    return labels[status || ""] || String(status || "Pendiente");
   };
 
   const getStatusColor = () => {
+    if (!jobStatus) return "text-slate-400 bg-slate-500/20 border-slate-500/30";
+    
     const status = jobStatus.job_status || jobStatus.campaign_status;
     
     const colors: Record<string, string> = {
@@ -139,15 +129,13 @@ export function CampaignStatusTracker({
       failed: "text-red-400 bg-red-500/20 border-red-500/30",
     };
     
-    return colors[status] || colors.pending;
+    return colors[status || ""] || colors.pending;
   };
-
-  const isActive = jobStatus.job_status === "in_progress" || 
-                  jobStatus.campaign_status === "in_progress" ||
-                  jobStatus.job_status === "queued";
 
   // Función robusta para verificar si está completado (case-insensitive)
   const isCompleted = () => {
+    if (!jobStatus) return false;
+    
     const jobStatusLower = (jobStatus.job_status || "").toLowerCase();
     const campaignStatusLower = (jobStatus.campaign_status || "").toLowerCase();
     const campaignStatusFromProp = (campaign?.status || "").toLowerCase();
@@ -195,7 +183,7 @@ export function CampaignStatusTracker({
         </div>
 
       {/* Progress Bar */}
-      {isActive && jobStatus.progress !== null && (
+      {isActive && jobStatus && jobStatus.progress !== null && (
         <div className="mb-3">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs text-slate-400">Progreso</span>

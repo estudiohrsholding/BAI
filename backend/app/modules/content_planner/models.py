@@ -36,7 +36,7 @@ class ContentCampaign(BaseModel, table=True):
     __tablename__ = "content_planner_campaigns"
     
     user_id: int = Field(foreign_key="user.id", index=True, description="ID del usuario propietario")
-    month: str = Field(..., max_length=20, description="Mes de la campaña (ej: '2025-02')")
+    month: str = Field(..., max_length=20, index=True, description="Mes de la campaña (ej: '2025-02')")
     tone_of_voice: str = Field(..., max_length=100, description="Tono de voz (ej: 'profesional', 'amigable', 'técnico')")
     themes: List[str] = Field(
         default_factory=list,

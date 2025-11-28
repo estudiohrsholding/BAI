@@ -99,6 +99,38 @@ class ContentPlannerService:
         
         return campaign
     
+    def update_campaign_job_id(
+        self,
+        campaign_id: int,
+        arq_job_id: str,
+        session: Session
+    ) -> ContentCampaign:
+        """
+        Actualiza el arq_job_id de una campaña.
+        
+        Args:
+            campaign_id: ID de la campaña
+            arq_job_id: ID del job de Arq
+            session: Sesión de base de datos
+        
+        Returns:
+            ContentCampaign: Campaña actualizada
+        
+        Raises:
+            ValueError: Si la campaña no existe
+        """
+        campaign = session.exec(select(ContentCampaign).where(ContentCampaign.id == campaign_id)).first()
+        if not campaign:
+            raise ValueError(f"Campaña con ID {campaign_id} no encontrada")
+        
+        campaign.arq_job_id = arq_job_id
+        campaign.updated_at = datetime.utcnow()
+        session.add(campaign)
+        session.commit()
+        session.refresh(campaign)
+        
+        return campaign
+    
     def get_campaign(
         self,
         campaign_id: int,

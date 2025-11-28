@@ -75,6 +75,38 @@ class DataMiningService:
         
         return query
     
+    def update_query_job_id(
+        self,
+        query_id: int,
+        arq_job_id: str,
+        session: Session
+    ) -> ExtractionQuery:
+        """
+        Actualiza el arq_job_id de una query.
+        
+        Args:
+            query_id: ID de la query
+            arq_job_id: ID del job de Arq
+            session: Sesión de base de datos
+        
+        Returns:
+            ExtractionQuery: Query actualizada
+        
+        Raises:
+            ValueError: Si la query no existe
+        """
+        query = session.exec(select(ExtractionQuery).where(ExtractionQuery.id == query_id)).first()
+        if not query:
+            raise ValueError(f"Query con ID {query_id} no encontrada")
+        
+        query.arq_job_id = arq_job_id
+        query.updated_at = datetime.utcnow()
+        session.add(query)
+        session.commit()
+        session.refresh(query)
+        
+        return query
+    
     def get_query(
         self,
         query_id: int,

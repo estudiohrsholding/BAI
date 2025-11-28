@@ -11,8 +11,8 @@ Principio: Dependency Inversion (DIP)
 """
 
 from functools import lru_cache
-from typing import Annotated
-from fastapi import Depends
+from typing import Annotated, TYPE_CHECKING
+from fastapi import Depends, Request
 from sqlmodel import Session
 
 from app.infrastructure.db.session import get_session
@@ -139,4 +139,51 @@ def get_chat_service(
 
 # Type alias
 ChatServiceDep = Annotated[ChatService, Depends(get_chat_service)]
+
+
+# ============================================
+# ARQ REDIS POOL DEPENDENCIES
+# ============================================
+
+def get_arq_pool(request: Request) -> "ArqRedis":
+    """
+    Dependency para obtener el pool de Arq Redis singleton.
+    
+    Este pool se inicializa una vez al startup de la aplicación (en main.py)
+    y se reutiliza en todos los requests. NO crear nuevos pools.
+    
+    Args:
+        request: Request de FastAPI (para acceder a app.state)
+    
+    Returns:
+        ArqRedis: Pool de conexiones Redis para Arq
+    
+    Raises:
+        HTTPException 500: Si el pool no está inicializado
+    
+    Example:
+        @router.post("/endpoint")
+        async def my_endpoint(
+            arq_pool: ArqRedisDep,
+            ...
+        ):
+            job = await arq_pool.enqueue_job("task_name", ...)
+    """
+    from fastapi import HTTPException, status
+    
+    pool = getattr(request.app.state, "arq_pool", None)
+    if not pool:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Arq Redis pool no inicializado. Verifica el startup del backend."
+        )
+    return pool
+
+
+# Type annotation with forward reference
+if TYPE_CHECKING:
+    from arq import ArqRedis
+
+# Type alias
+ArqRedisDep = Annotated["ArqRedis", Depends(get_arq_pool)]
 

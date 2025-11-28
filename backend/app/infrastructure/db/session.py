@@ -65,6 +65,22 @@ def get_session() -> Generator[Session, None, None]:
         session.close()
 
 
+def get_session_dependency():
+    """
+    Generator function para usar como FastAPI dependency.
+    
+    Compatible con Depends() de FastAPI.
+    
+    Usage:
+        @app.get("/example")
+        def example(session: Session = Depends(get_session_dependency)):
+            # Use session here
+            pass
+    """
+    with get_session() as session:
+        yield session
+
+
 def get_db_session() -> Session:
     """
     Dependency function para FastAPI.

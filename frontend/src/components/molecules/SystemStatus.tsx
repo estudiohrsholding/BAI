@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { getSystemHealth, SystemHealth, ServiceStatus } from "@/lib/api-client";
 import { Database, Zap, Bot, Cpu } from "lucide-react";
+import useSWR from "swr";
 
 /**
  * SystemStatus Component
@@ -16,33 +17,22 @@ import { Database, Zap, Bot, Cpu } from "lucide-react";
  * Actualiza automáticamente cada 30 segundos.
  */
 export function SystemStatus() {
-  const [health, setHealth] = useState<SystemHealth | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const checkHealth = async () => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const healthData = await getSystemHealth();
-      setHealth(healthData);
-    } catch (err) {
-      setError("No se pudo conectar al sistema");
-      setHealth(null);
-    } finally {
-      setIsLoading(false);
+  // Usar SWR con polling cada 30 segundos
+  const { data: health, error, isLoading } = useSWR<SystemHealth>(
+    "system-health",
+    getSystemHealth,
+    {
+      refreshInterval: 30000, // Poll cada 30 segundos
+      revalidateOnFocus: false, // No revalidar al cambiar de pestaña
+      revalidateOnReconnect: true, // Revalidar al reconectar
+      shouldRetryOnError: true,
+      errorRetryCount: 3,
+      errorRetryInterval: 2000,
     }
-  };
-
-  useEffect(() => {
-    // Check immediately on mount
-    checkHealth();
-
-    // Poll every 30 seconds to keep status updated
-    const interval = setInterval(checkHealth, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
+  );
+  
+  // Convertir error a string
+  const errorMessage = error ? (error instanceof Error ? error.message : "No se pudo conectar al sistema") : null;
 
   // Determinar estado general
   const overallStatus = health?.status || "unhealthy";
@@ -122,9 +112,9 @@ export function SystemStatus() {
       )}
 
       {/* Error state */}
-      {error && (
+      {errorMessage && (
         <div className="px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20">
-          <p className="text-xs text-red-400">{error}</p>
+          <p className="text-xs text-red-400">{errorMessage}</p>
         </div>
       )}
     </div>

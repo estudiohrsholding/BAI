@@ -5,8 +5,7 @@ Define los endpoints HTTP para el módulo Chat.
 Solo maneja HTTP (request/response), delega la lógica a ChatService.
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends, Request
-from fastapi import Request
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 
 from app.modules.chat.schemas import (
@@ -20,7 +19,8 @@ from app.modules.chat.service import ChatService
 from app.core.dependencies import (
     ChatServiceDep,
     DatabaseDep,
-    AIEngineDep
+    AIEngineDep,
+    ArqRedisDep
 )
 from app.modules.chat.models import ChatMessage
 from app.api.deps import requires_feature
@@ -38,8 +38,8 @@ router = APIRouter(prefix="/api/v1/chat", tags=["chat"])
     description="Procesa un mensaje del usuario y genera una respuesta del motor de IA"
 )
 async def send_message(
-    request: Request,
     chat_request: ChatMessageRequest,
+    arq_pool: ArqRedisDep,
     chat_service: ChatServiceDep,
     session: DatabaseDep,
     current_user: User = Depends(requires_feature("ai_content_generation")),
@@ -48,7 +48,7 @@ async def send_message(
     Endpoint para enviar un mensaje de chat (autenticado).
     
     Args:
-        request: Request de FastAPI (para acceder a arq_pool)
+        arq_pool: Pool de Redis para Arq (inyectado automáticamente)
         chat_request: Datos del mensaje
         chat_service: Servicio de chat (inyectado)
         session: Sesión de base de datos (inyectada)
@@ -70,23 +70,21 @@ async def send_message(
         )
         
         # Trackear uso de AI content generation de forma asíncrona
-        arq_pool = getattr(request.app.state, "arq_pool", None)
-        if arq_pool:
-            try:
-                await arq_pool.enqueue_job(
-                    "track_feature_use",
-                    user_id=current_user.id,
-                    feature_key="ai_content_generation",
-                    tracking_metadata={
-                        "model": chat_service.ai_engine.model_name,
-                        "provider": chat_service.ai_engine.provider,
-                        "message_length": len(chat_request.text),
-                        "response_length": len(response_text)
-                    }
-                )
-            except Exception:
-                # Si falla el tracking, no romper el flujo principal
-                pass
+        try:
+            await arq_pool.enqueue_job(
+                "track_feature_use",
+                user_id=current_user.id,
+                feature_key="ai_content_generation",
+                tracking_metadata={
+                    "model": chat_service.ai_engine.model_name,
+                    "provider": chat_service.ai_engine.provider,
+                    "message_length": len(chat_request.text),
+                    "response_length": len(response_text)
+                }
+            )
+        except Exception:
+            # Si falla el tracking, no romper el flujo principal
+            pass
         
         return ChatMessageResponse(
             response=response_text,

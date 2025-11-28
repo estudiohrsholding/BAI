@@ -5,7 +5,7 @@ Define los endpoints HTTP para el módulo Content Creator.
 Solo maneja HTTP (request/response), delega la lógica a ContentCreatorService.
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from datetime import datetime, timedelta
 
@@ -20,6 +20,7 @@ from app.modules.content_creator.service import ContentCreatorService
 from app.modules.content_creator.models import Campaign, CampaignStatus
 from app.api.deps import requires_plan
 from app.core.database import get_session
+from app.core.dependencies import ArqRedisDep
 from app.models.user import User, PlanTier
 from sqlmodel import Session
 
@@ -41,8 +42,8 @@ def get_content_creator_service() -> ContentCreatorService:
     description="Crea una nueva campaña de generación de contenido para influencer IA. Solo disponible para usuarios PARTNER."
 )
 async def create_campaign(
-    request: Request,
     campaign_data: CampaignCreateRequest,
+    arq_pool: ArqRedisDep,
     current_user: User = Depends(requires_plan(PlanTier.PARTNER)),
     session: Session = Depends(get_session),
     service: ContentCreatorService = Depends(get_content_creator_service)
@@ -59,7 +60,7 @@ async def create_campaign(
     4. Retorna inmediatamente con 202 Accepted (no bloquea)
     
     Args:
-        request: Request de FastAPI (para acceder a arq_pool)
+        arq_pool: Pool de Redis para Arq (inyectado automáticamente)
         campaign_data: Datos de la campaña
         current_user: Usuario autenticado (debe ser PARTNER)
         session: Sesión de base de datos
@@ -87,26 +88,20 @@ async def create_campaign(
         )
         
         # Encolar tarea de generación de contenido en el worker
-        arq_pool = getattr(request.app.state, "arq_pool", None)
-        if not arq_pool:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Worker pool no inicializado. Verifica el startup del backend."
-            )
-        
         try:
-            # Encolar tarea asíncrona
+            # Encolar tarea asíncrona usando pool singleton
             job = await arq_pool.enqueue_job(
                 "generate_influencer_content",
                 campaign_id=campaign.id
             )
             
-            # Guardar job_id en la campaña para monitoreo
+            # Guardar job_id en la campaña para monitoreo (usando servicio)
             if job and job.job_id:
-                campaign.arq_job_id = job.job_id
-                session.add(campaign)
-                session.commit()
-                session.refresh(campaign)
+                campaign = service.update_campaign_job_id(
+                    campaign_id=campaign.id,
+                    arq_job_id=job.job_id,
+                    session=session
+                )
             
             # Calcular estimación de finalización (10-20 segundos por pieza de contenido)
             estimated_seconds = campaign.content_count * 15  # Promedio de 15 segundos por pieza
@@ -278,8 +273,8 @@ async def get_campaign(
     description="Retorna el estado actual del job de Arq asociado a una campaña"
 )
 async def get_campaign_job_status(
-    request: Request,
     campaign_id: int,
+    arq_pool: ArqRedisDep,
     current_user: User = Depends(requires_plan(PlanTier.PARTNER)),
     session: Session = Depends(get_session),
     service: ContentCreatorService = Depends(get_content_creator_service)
@@ -296,7 +291,7 @@ async def get_campaign_job_status(
     4. Retorna el estado combinado (campaign status + job status)
     
     Args:
-        request: Request de FastAPI (para acceder a arq_pool)
+        arq_pool: Pool de Redis para Arq (inyectado automáticamente)
         campaign_id: ID de la campaña
         current_user: Usuario autenticado (debe ser PARTNER)
         session: Sesión de base de datos
@@ -319,20 +314,6 @@ async def get_campaign_job_status(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Campaña con ID {campaign_id} no encontrada"
-        )
-    
-    # Obtener arq_pool del request
-    arq_pool = getattr(request.app.state, "arq_pool", None)
-    if not arq_pool:
-        # Si no hay pool, retornar solo el estado de la campaña
-        return CampaignJobStatusResponse(
-            campaign_id=campaign_id,
-            job_id=campaign.arq_job_id,
-            job_status=None,
-            campaign_status=campaign.status,
-            progress=None,
-            result=None,
-            error="Worker pool no disponible"
         )
     
     try:

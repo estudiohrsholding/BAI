@@ -1,113 +1,26 @@
 """
 Task Queue - Utilidades para Encolar Tareas
 
-Proporciona funciones helper para encolar tareas desde la API.
+⚠️ DEPRECATED - NO USAR ESTE MÓDULO ⚠️
+
+Este módulo está DEPRECADO porque crea nuevos pools Redis en cada llamada,
+lo cual es un cuello de botella de performance crítico.
+
+En su lugar, usa el pool singleton inyectado:
+    from app.core.dependencies import ArqRedisDep
+    
+    @router.post("/endpoint")
+    async def my_endpoint(arq_pool: ArqRedisDep):
+        job = await arq_pool.enqueue_job("task_name", ...)
+
+El pool singleton se inicializa en main.py y está disponible
+globalmente como app.state.arq_pool.
+
+Este archivo se mantiene solo para evitar breaking changes
+pero será eliminado en una futura versión.
 """
 
-from typing import Optional, Dict, Any
-from arq import create_pool
-from arq.connections import RedisSettings
+# Las funciones anteriores fueron eliminadas para prevenir su uso.
+# Si necesitas encolar tareas, usa el dependency ArqRedisDep en lugar de esto.
 
-from app.core.config import settings
-
-
-async def enqueue_task(
-    task_name: str,
-    **kwargs
-) -> Optional[str]:
-    """
-    Encola una tarea en el worker de Arq.
-    
-    Args:
-        task_name: Nombre de la función de tarea (debe estar en WorkerSettings.functions)
-        **kwargs: Argumentos para pasar a la tarea
-    
-    Returns:
-        str: ID del job (para tracking) o None si falla
-    
-    Example:
-        job_id = await enqueue_task(
-            "heavy_background_task",
-            task_name="data_analysis",
-            duration_seconds=10
-        )
-    """
-    try:
-        # Crear pool de Redis para Arq
-        redis_settings = RedisSettings(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            password=settings.REDIS_PASSWORD,
-            database=settings.REDIS_DB,
-        )
-        
-        redis_pool = await create_pool(redis_settings)
-        
-        # Encolar tarea
-        job = await redis_pool.enqueue_job(task_name, **kwargs)
-        
-        # Cerrar pool
-        await redis_pool.close()
-        
-        return job.job_id if job else None
-    
-    except Exception as e:
-        print(f"Error encolando tarea {task_name}: {str(e)}")
-        return None
-
-
-async def get_job_status(job_id: str) -> Optional[Dict[str, Any]]:
-    """
-    Obtiene el estado de un job.
-    
-    Args:
-        job_id: ID del job
-    
-    Returns:
-        Dict con información del job o None si no existe
-    """
-    try:
-        redis_settings = RedisSettings(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            password=settings.REDIS_PASSWORD,
-            database=settings.REDIS_DB,
-        )
-        
-        redis_pool = await create_pool(redis_settings)
-        
-        from arq.jobs import Job
-        job = Job(job_id, redis_pool)
-        job_status = await job.status()
-        
-        await redis_pool.close()
-        
-        if job_status is not None:
-            result = None
-            error = None
-            
-            if job_status == "complete":
-                try:
-                    result = await job.result()
-                except Exception:
-                    pass
-            elif job_status == "failed":
-                try:
-                    error_info = await job.result()
-                    error = str(error_info) if error_info else "Job failed"
-                except Exception as e:
-                    error = str(e)
-            
-            return {
-                "job_id": job_id,
-                "status": job_status,
-                "result": result,
-                "error": error
-            }
-        
-        return None
-    
-    except Exception as e:
-        print(f"Error obteniendo estado del job {job_id}: {str(e)}")
-        return None
-
+__all__ = []  # No exportar nada para prevenir uso accidental

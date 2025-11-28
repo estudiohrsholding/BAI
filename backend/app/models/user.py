@@ -53,7 +53,7 @@ class User(SQLModel, table=True):
 
   plan_tier: PlanTier = Field(
     default=PlanTier.MOTOR,
-    sa_column=Column(SAEnum(PlanTier, name="plan_tier"))
+    sa_column=Column(SAEnum(PlanTier, name="plan_tier"), index=True)
   )
   subscription_status: SubscriptionStatus = Field(
     default=SubscriptionStatus.ACTIVE,

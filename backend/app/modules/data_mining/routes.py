@@ -5,7 +5,7 @@ Define los endpoints HTTP para el módulo Data Mining.
 Solo maneja HTTP (request/response), delega la lógica a DataMiningService.
 """
 
-from fastapi import APIRouter, HTTPException, status, Depends, Request
+from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from datetime import datetime, timedelta
 
@@ -21,6 +21,7 @@ from app.modules.data_mining.service import DataMiningService
 from app.modules.data_mining.models import ExtractionQuery, ExtractionStatus
 from app.api.deps import requires_plan
 from app.core.database import get_session
+from app.core.dependencies import ArqRedisDep
 from app.models.user import User, PlanTier
 from sqlmodel import Session
 
@@ -42,8 +43,8 @@ def get_data_mining_service() -> DataMiningService:
     description="Crea una nueva query de extracción de datos de mercado y la encola para procesamiento asíncrono. Solo disponible para usuarios CEREBRO o superior."
 )
 async def launch_query(
-    request: Request,
     query_data: ExtractionQueryCreate,
+    arq_pool: ArqRedisDep,
     current_user: User = Depends(requires_plan(PlanTier.CEREBRO)),
     session: Session = Depends(get_session),
     service: DataMiningService = Depends(get_data_mining_service)
@@ -60,7 +61,7 @@ async def launch_query(
     4. Retorna inmediatamente con 202 Accepted (no bloquea)
     
     Args:
-        request: Request de FastAPI (para acceder a arq_pool)
+        arq_pool: Pool de Redis para Arq (inyectado automáticamente)
         query_data: Datos de la query de extracción
         current_user: Usuario autenticado (debe ser CEREBRO o superior)
         session: Sesión de base de datos
@@ -84,26 +85,20 @@ async def launch_query(
         )
         
         # Encolar tarea de extracción en el worker
-        arq_pool = getattr(request.app.state, "arq_pool", None)
-        if not arq_pool:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Worker pool no inicializado. Verifica el startup del backend."
-            )
-        
         try:
-            # Encolar tarea asíncrona
+            # Encolar tarea asíncrona usando pool singleton
             job = await arq_pool.enqueue_job(
                 "launch_deep_extraction",
                 query_id=query.id
             )
             
-            # Guardar job_id en la query para monitoreo
+            # Guardar job_id en la query para monitoreo (usando servicio)
             if job and job.job_id:
-                query.arq_job_id = job.job_id
-                session.add(query)
-                session.commit()
-                session.refresh(query)
+                query = service.update_query_job_id(
+                    query_id=query.id,
+                    arq_job_id=job.job_id,
+                    session=session
+                )
             
             # Calcular estimación de finalización (3-5 segundos de procesamiento)
             estimated_seconds = 5  # Tiempo estimado de procesamiento
@@ -267,8 +262,8 @@ async def get_query(
     description="Retorna el estado actual del job de Arq asociado a una query de extracción"
 )
 async def get_query_job_status(
-    request: Request,
     query_id: int,
+    arq_pool: ArqRedisDep,
     current_user: User = Depends(requires_plan(PlanTier.CEREBRO)),
     session: Session = Depends(get_session),
     service: DataMiningService = Depends(get_data_mining_service)
@@ -285,7 +280,7 @@ async def get_query_job_status(
     4. Retorna el estado combinado (query status + job status)
     
     Args:
-        request: Request de FastAPI (para acceder a arq_pool)
+        arq_pool: Pool de Redis para Arq (inyectado automáticamente)
         query_id: ID de la query
         current_user: Usuario autenticado (debe ser CEREBRO o superior)
         session: Sesión de base de datos
@@ -308,20 +303,6 @@ async def get_query_job_status(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Query con ID {query_id} no encontrada"
-        )
-    
-    # Obtener arq_pool del request
-    arq_pool = getattr(request.app.state, "arq_pool", None)
-    if not arq_pool:
-        # Si no hay pool, retornar solo el estado de la query
-        return ExtractionQueryStatusResponse(
-            query_id=query_id,
-            job_id=query.arq_job_id,
-            job_status=None,
-            query_status=query.status,
-            progress=None,
-            result=None,
-            error="Worker pool no disponible"
         )
     
     try:
