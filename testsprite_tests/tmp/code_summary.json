@@ -1,0 +1,124 @@
+{
+  "tech_stack": [
+    "Python 3.11",
+    "FastAPI",
+    "Next.js 14",
+    "TypeScript",
+    "PostgreSQL",
+    "Redis",
+    "Arq",
+    "SQLModel",
+    "Pydantic",
+    "Tailwind CSS",
+    "n8n",
+    "Google Gemini API",
+    "Stripe",
+    "Docker"
+  ],
+  "features": [
+    {
+      "name": "Content Planner",
+      "description": "Módulo para planificar y generar contenido mensual (4 Posts + 1 Reel) usando n8n para generación de IA",
+      "files": [
+        "backend/app/modules/content_planner/models.py",
+        "backend/app/modules/content_planner/routes.py",
+        "backend/app/modules/content_planner/service.py",
+        "backend/app/modules/content_planner/schemas.py",
+        "backend/app/workers/tasks/content_tasks.py",
+        "frontend/src/components/content_planner/CampaignStatusTracker.tsx",
+        "frontend/src/components/content_planner/CampaignResultViewer.tsx"
+      ]
+    },
+    {
+      "name": "Data Mining",
+      "description": "Extracción de datos de mercado usando Brave Search API y análisis con Gemini",
+      "files": [
+        "backend/app/modules/data_mining/models.py",
+        "backend/app/modules/data_mining/routes.py",
+        "backend/app/modules/data_mining/service.py",
+        "backend/app/modules/data_mining/schemas.py",
+        "backend/app/workers/tasks/extraction_tasks.py",
+        "frontend/src/components/data_mining/ExtractionStatusList.tsx",
+        "frontend/src/components/data_mining/QueryStatusItem.tsx",
+        "frontend/src/components/data_mining/ExtractionResultViewer.tsx"
+      ]
+    },
+    {
+      "name": "Content Creator",
+      "description": "Generación de contenido para influencers IA con múltiples plataformas",
+      "files": [
+        "backend/app/modules/content_creator/models.py",
+        "backend/app/modules/content_creator/routes.py",
+        "backend/app/modules/content_creator/service.py",
+        "frontend/src/components/content_creator/CampaignStatusList.tsx"
+      ]
+    },
+    {
+      "name": "Chat Module",
+      "description": "Sistema de chat con IA usando Gemini, con historial y contexto",
+      "files": [
+        "backend/app/modules/chat/routes.py",
+        "backend/app/modules/chat/service.py",
+        "backend/app/modules/chat/repository.py",
+        "backend/app/modules/chat/engine/gemini.py",
+        "frontend/src/components/organisms/ChatWindow.tsx",
+        "frontend/src/context/ChatContext.tsx"
+      ]
+    },
+    {
+      "name": "Billing & Subscriptions",
+      "description": "Sistema de facturación con Stripe, planes tiered (Motor/Cerebro/Partner) y feature gating",
+      "files": [
+        "backend/app/modules/billing/routes.py",
+        "backend/app/modules/billing/service.py",
+        "backend/app/modules/billing/models.py",
+        "backend/app/api/deps.py"
+      ]
+    },
+    {
+      "name": "Analytics",
+      "description": "Tracking de uso de features y métricas de dashboard",
+      "files": [
+        "backend/app/modules/analytics/routes.py",
+        "backend/app/modules/analytics/service.py",
+        "backend/app/modules/analytics/models.py"
+      ]
+    },
+    {
+      "name": "Async Workers",
+      "description": "Sistema de workers asíncronos usando Arq y Redis para tareas pesadas",
+      "files": [
+        "backend/app/workers/tasks/content_tasks.py",
+        "backend/app/workers/tasks/extraction_tasks.py",
+        "backend/app/workers/tasks/analytics.py",
+        "backend/app/workers/worker.py",
+        "backend/app/workers/queue.py"
+      ]
+    },
+    {
+      "name": "Health Check",
+      "description": "Endpoint de health check que verifica Database, Redis, Workers y AI Engine",
+      "files": [
+        "backend/app/api/v1/endpoints/health.py"
+      ]
+    },
+    {
+      "name": "Frontend Polling",
+      "description": "Sistema de polling inteligente para monitoreo de estado de jobs usando hooks personalizados",
+      "files": [
+        "frontend/src/hooks/useJobStatus.ts",
+        "frontend/src/hooks/useMultipleJobStatuses.ts"
+      ]
+    },
+    {
+      "name": "Database Session Management",
+      "description": "Sistema unificado de gestión de sesiones de base de datos con pool configuration",
+      "files": [
+        "backend/app/infrastructure/db/session.py",
+        "backend/app/core/database.py",
+        "backend/app/core/dependencies.py"
+      ]
+    }
+  ]
+}
+
