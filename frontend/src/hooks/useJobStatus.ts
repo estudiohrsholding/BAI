@@ -23,11 +23,11 @@ export interface JobStatus {
   [key: string]: any;
 }
 
-interface UseJobStatusOptions {
+interface UseJobStatusOptions<T extends JobStatus = JobStatus> {
   /**
    * Función que obtiene el estado del job (ej: getCampaignStatus, getExtractionQueryStatus)
    */
-  fetcher: (id: number) => Promise<JobStatus>;
+  fetcher: (id: number) => Promise<T>;
   
   /**
    * ID del job/campaign/query a monitorear
@@ -43,7 +43,7 @@ interface UseJobStatusOptions {
   /**
    * Callback opcional cuando el estado se actualiza
    */
-  onStatusUpdate?: (status: JobStatus) => void;
+  onStatusUpdate?: (status: T) => void;
   
   /**
    * Si es true, deshabilita el polling completamente
@@ -72,13 +72,13 @@ function isJobActive(status: JobStatus | null | undefined): boolean {
 /**
  * Hook para monitorear el estado de un job con polling inteligente
  */
-export function useJobStatus({
+export function useJobStatus<T extends JobStatus = JobStatus>({
   fetcher,
   jobId,
   pollInterval = 5000,
   onStatusUpdate,
   disabled = false,
-}: UseJobStatusOptions) {
+}: UseJobStatusOptions<T>) {
   
   // Key única para este job
   const swrKey = disabled || !jobId ? null : `job-status-${jobId}`;
@@ -92,7 +92,7 @@ export function useJobStatus({
   }, [fetcher]);
   
   // Configuración de SWR con polling condicional
-  const { data, error, isLoading, mutate } = useSWR<JobStatus | null>(
+  const { data, error, isLoading, mutate } = useSWR<T | null>(
     swrKey,
     swrFetcher,
     {
