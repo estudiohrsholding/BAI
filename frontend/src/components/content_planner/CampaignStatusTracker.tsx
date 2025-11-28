@@ -44,7 +44,7 @@ export function CampaignStatusTracker({
 }: CampaignStatusTrackerProps) {
   const [isViewerOpen, setIsViewerOpen] = useState(false);
 
-  // Usar hook de SWR con polling inteligente
+  // Usar hook de polling inteligente
   const {
     status: jobStatus,
     isLoading,
@@ -58,8 +58,26 @@ export function CampaignStatusTracker({
     onStatusUpdate,
   });
   
-  // Convertir error de SWR a string
+  // Convertir error a string
   const error = swrError ? (swrError instanceof Error ? swrError.message : "Error al obtener estado del job") : null;
+
+  // ============================================
+  // DATA HYBRIDATION: Combinar datos live y static
+  // ============================================
+  
+  /**
+   * Consolidar fuente de datos:
+   * 1. jobStatus.result (datos frescos del polling) - PRIORIDAD
+   * 2. campaign.generated_content (datos estáticos de la prop) - FALLBACK
+   */
+  const finalContent = jobStatus?.result || campaign?.generated_content;
+  
+  /**
+   * Verificar si hay contenido disponible (de cualquier fuente)
+   */
+  const hasContent = finalContent && 
+                     typeof finalContent === 'object' && 
+                     Object.keys(finalContent).length > 0;
 
   if (isLoading && !jobStatus) {
     return (
@@ -132,26 +150,13 @@ export function CampaignStatusTracker({
     return colors[status || ""] || colors.pending;
   };
 
-  // Función robusta para verificar si está completado (case-insensitive)
-  const isCompleted = () => {
-    if (!jobStatus) return false;
-    
-    const jobStatusLower = (jobStatus.job_status || "").toLowerCase();
-    const campaignStatusLower = (jobStatus.campaign_status || "").toLowerCase();
-    const campaignStatusFromProp = (campaign?.status || "").toLowerCase();
-    
-    const completedVariants = ["complete", "completed", "completado"];
-    
-    return (
-      completedVariants.includes(jobStatusLower) ||
-      completedVariants.includes(campaignStatusLower) ||
-      completedVariants.includes(campaignStatusFromProp)
-    );
-  };
-
-  // Verificar si hay contenido generado disponible
-  const hasGeneratedContent = campaign?.generated_content && 
-                               Object.keys(campaign.generated_content).length > 0;
+  // Crear objeto campaign sintético con contenido fresco para el modal
+  const campaignWithFreshContent: ContentCampaignResponse | undefined = campaign 
+    ? {
+        ...campaign,
+        generated_content: finalContent as Record<string, any> | null,
+      }
+    : undefined;
 
   return (
     <>
@@ -170,7 +175,8 @@ export function CampaignStatusTracker({
             >
               {getStatusLabel()}
             </span>
-            {isCompleted() && hasGeneratedContent && (
+            {/* Botón visible SIEMPRE que haya contenido (ignora status string) */}
+            {hasContent && (
               <button
                 onClick={() => setIsViewerOpen(true)}
                 className="flex items-center gap-1.5 rounded-md border-2 border-violet-500 bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-violet-500 hover:border-violet-400 transition-all shadow-lg shadow-violet-500/20"
@@ -230,10 +236,10 @@ export function CampaignStatusTracker({
       </div>
       </div>
 
-      {/* Result Viewer Modal */}
-      {campaign && (
+      {/* Result Viewer Modal - Pasar contenido fresco */}
+      {campaignWithFreshContent && (
         <CampaignResultViewer
-          campaign={campaign}
+          campaign={campaignWithFreshContent}
           open={isViewerOpen}
           onOpenChange={setIsViewerOpen}
         />
@@ -241,4 +247,3 @@ export function CampaignStatusTracker({
     </>
   );
 }
-
