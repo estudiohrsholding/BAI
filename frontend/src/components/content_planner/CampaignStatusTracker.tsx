@@ -69,11 +69,17 @@ export function CampaignStatusTracker({
    * Consolidar fuente de datos:
    * 1. jobStatus.result (datos frescos del polling) - PRIORIDAD
    * 2. campaign.generated_content (datos estáticos de la prop) - FALLBACK
+   * 
+   * Esto asegura que el botón aparezca tan pronto como haya contenido disponible,
+   * ya sea del polling en tiempo real o de la prop estática.
    */
   const finalContent = jobStatus?.result || campaign?.generated_content;
   
   /**
-   * Verificar si hay contenido disponible (de cualquier fuente)
+   * Verificar si hay contenido disponible (de cualquier fuente).
+   * 
+   * IMPORTANTE: Esta es la ÚNICA variable que debe usarse para mostrar el botón.
+   * No crear variables adicionales como hasGeneratedContent que solo miren la prop estática.
    */
   const hasContent = finalContent && 
                      typeof finalContent === 'object' && 
@@ -151,6 +157,7 @@ export function CampaignStatusTracker({
   };
 
   // Crear objeto campaign sintético con contenido fresco para el modal
+  // Esto asegura que el modal muestre los datos más recientes (del polling o de la prop)
   const campaignWithFreshContent: ContentCampaignResponse | undefined = campaign 
     ? {
         ...campaign,
@@ -175,7 +182,10 @@ export function CampaignStatusTracker({
             >
               {getStatusLabel()}
             </span>
-            {/* Botón visible SIEMPRE que haya contenido (ignora status string) */}
+            {/* 
+              Botón visible SIEMPRE que haya contenido (ignora status string).
+              Usa hasContent (datos híbridos) NO hasGeneratedContent (solo prop estática).
+            */}
             {hasContent && (
               <button
                 onClick={() => setIsViewerOpen(true)}
