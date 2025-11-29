@@ -24,6 +24,7 @@ class CampaignCreateRequest(BaseModel):
     tone_of_voice: str
     platforms: list[str]
     content_count: int
+    topic: str  # Tema o contexto de la campaña - REQUERIDO para que la IA sepa qué generar
     scheduled_at: str | None = None
 
 
@@ -118,7 +119,8 @@ async def create_campaign(
         "influencer": campaign.influencer_name,
         "tone": campaign.tone_of_voice,
         "platforms": campaign.platforms,
-        "pieces": campaign.content_count
+        "pieces": campaign.content_count,
+        "topic": campaign.topic  # CRÍTICO: Tema/contexto para que la IA sepa qué generar
     }
     
     try:

@@ -77,6 +77,7 @@ export default function ConfiguracionPage() {
   const [campaignName, setCampaignName] = useState("");
   const [influencerName, setInfluencerName] = useState("");
   const [toneOfVoice, setToneOfVoice] = useState("profesional");
+  const [campaignTopic, setCampaignTopic] = useState("");  // Tema/contexto de la campaña
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [contentCount, setContentCount] = useState(10);
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
@@ -161,8 +162,8 @@ export default function ConfiguracionPage() {
   };
 
   const handleCreateCampaign = async () => {
-    if (!campaignName || !influencerName || selectedPlatforms.length === 0) {
-      alert("Por favor completa todos los campos requeridos");
+    if (!campaignName || !influencerName || !campaignTopic.trim() || selectedPlatforms.length === 0) {
+      alert("Por favor completa todos los campos requeridos, incluyendo el tema de la campaña");
       return;
     }
 
@@ -172,6 +173,7 @@ export default function ConfiguracionPage() {
         name: campaignName,
         influencer_name: influencerName,
         tone_of_voice: toneOfVoice,
+        topic: campaignTopic.trim(),  // Tema/contexto de la campaña
         platforms: selectedPlatforms,
         content_count: contentCount,
         scheduled_at: null, // Por ahora, iniciar inmediatamente
@@ -183,6 +185,7 @@ export default function ConfiguracionPage() {
       setCampaignName("");
       setInfluencerName("");
       setToneOfVoice("profesional");
+      setCampaignTopic("");
       setSelectedPlatforms([]);
       setContentCount(10);
       
@@ -934,6 +937,23 @@ export default function ConfiguracionPage() {
 
                   <div>
                     <label className="block text-sm font-medium text-slate-300 mb-2">
+                      Tema o Contexto de la Campaña *
+                    </label>
+                    <textarea
+                      value={campaignTopic}
+                      onChange={(e) => setCampaignTopic(e.target.value)}
+                      placeholder="Ej: Promocionar las nuevas zapatillas de running para verano, destacando su tecnología de amortiguación y diseño sostenible..."
+                      rows={4}
+                      className="w-full rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-slate-300 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none"
+                      required
+                    />
+                    <p className="mt-1 text-xs text-slate-500">
+                      Describe el tema, mensaje o contexto sobre el cual la IA debe generar el contenido. Este campo es esencial para que la generación sea relevante y útil.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-300 mb-2">
                       Plataformas de Destino *
                     </label>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -979,7 +999,7 @@ export default function ConfiguracionPage() {
                     variant="primary"
                     size="lg"
                     onClick={handleCreateCampaign}
-                    disabled={isCreatingCampaign || !campaignName || !influencerName || selectedPlatforms.length === 0}
+                    disabled={isCreatingCampaign || !campaignName || !influencerName || !campaignTopic.trim() || selectedPlatforms.length === 0}
                     className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600"
                   >
                     {isCreatingCampaign ? (

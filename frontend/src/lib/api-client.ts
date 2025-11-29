@@ -78,6 +78,7 @@ export interface CampaignCreateRequest {
   tone_of_voice: string;
   platforms: string[];
   content_count: number;
+  topic: string;  // Tema o contexto de la campaña - REQUERIDO
   scheduled_at?: string | null;
 }
 
