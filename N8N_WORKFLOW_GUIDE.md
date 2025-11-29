@@ -124,14 +124,27 @@ const textContent = geminiResponse.candidates[0].content.parts[0].text;
 const cleanJson = textContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
 // Parsear el JSON
-const contentPlan = JSON.parse(cleanJson);
+let contentPlan;
+try {
+  contentPlan = JSON.parse(cleanJson);
+} catch (e) {
+  // Si falla, intentar extraer solo el array si está envuelto en otro objeto
+  const parsed = JSON.parse(cleanJson);
+  contentPlan = Array.isArray(parsed) ? parsed : parsed.pieces || parsed.content || [];
+}
+
+// Asegurar que contentPlan es un array
+if (!Array.isArray(contentPlan)) {
+  throw new Error("El plan de contenido debe ser un array");
+}
 
 // Retornar el plan junto con los datos originales de la campaña
+// IMPORTANTE: Devolver un objeto con la clave "pieces" que contiene el array
 return {
   json: {
     campaign_id: $input.item.json.campaign_id || $('Webhook').item.json.campaign_id,
     user_id: $input.item.json.user_id || $('Webhook').item.json.user_id,
-    pieces: contentPlan
+    pieces: contentPlan  // Array de piezas de contenido
   }
 };
 ```
@@ -155,9 +168,15 @@ return {
 - **Body (JSON):**
 ```json
 {
-  "pieces": {{ $json.pieces }}
+  "pieces": {{ JSON.stringify($json.pieces) }}
 }
 ```
+
+**⚠️ IMPORTANTE:** 
+- El body DEBE ser un objeto JSON con la clave `"pieces"` que contiene un array
+- NO envíes el array directamente: `[...]` ❌
+- SÍ envía un objeto: `{ "pieces": [...] }` ✅
+- En n8n, usa `JSON.stringify()` para asegurar que el array se serialice correctamente
 
 **Respuesta esperada:**
 ```json
@@ -457,6 +476,71 @@ python -c "import secrets; print(secrets.token_urlsafe(32))"
   "media_url": "https://cdn.example.com/video_123.mp4"
 }
 ```
+
+---
+
+## 🔧 TROUBLESHOOTING
+
+### Error 422: "Input should be a valid dictionary or object"
+
+**Causa:** El body del request no tiene el formato correcto. Pydantic espera un objeto con la clave `"pieces"`, pero está recibiendo un array directamente.
+
+**Solución:**
+
+1. **Verifica el nodo "Parse Content Plan":**
+   - Debe devolver: `{ "pieces": [...] }`
+   - NO debe devolver: `[...]` (array suelto)
+
+2. **Verifica el nodo HTTP Request "Save Plan to DB":**
+   - Body debe ser: `{ "pieces": {{ $json.pieces }} }`
+   - NO debe ser: `{{ $json.pieces }}` (array suelto)
+
+3. **Solución alternativa con nodo Code intermedio:**
+   
+   Añade un nodo **Code** entre "Parse Content Plan" y "Save Plan to DB":
+   
+   **Nombre:** `Prepare Request Body`
+   
+   **Código:**
+   ```javascript
+   const pieces = $input.item.json.pieces;
+   const campaignId = $input.item.json.campaign_id;
+   
+   // Asegurar que pieces es un array
+   if (!Array.isArray(pieces)) {
+     throw new Error("pieces debe ser un array");
+   }
+   
+   return {
+     json: {
+       campaign_id: campaignId,
+       request_body: {
+         pieces: pieces
+       }
+     }
+   };
+   ```
+   
+   Luego en el HTTP Request:
+   - **Body (JSON):** `{{ $json.request_body }}`
+
+### Error 401: "Invalid or missing API key"
+
+**Causa:** La API key no está configurada o es incorrecta.
+
+**Solución:**
+1. Verifica que `N8N_SERVICE_API_KEY` esté configurada en n8n (Environment Variables)
+2. Verifica que el header `X-API-Key` esté presente en el request
+3. Verifica que la misma key esté configurada en el backend (`N8N_SERVICE_API_KEY` en .env)
+
+### Error 404: "Campaña con ID X no encontrada"
+
+**Causa:** El `campaign_id` no existe en la base de datos.
+
+**Solución:**
+1. Verifica que la campaña se haya creado correctamente desde el frontend
+2. Verifica que el `campaign_id` en el webhook coincida con el ID real de la campaña
+3. Revisa los logs del backend para ver qué `campaign_id` se está recibiendo
 
 ---
 

@@ -224,11 +224,46 @@ class ContentPiecePlan(BaseModel):
     type: str  # Reel, Post, Story, etc.
     caption: str
     visual_script: str
+    
+    class Config:
+        # Permitir nombres de campo con alias si es necesario
+        populate_by_name = True
 
 
 class SavePlanRequest(BaseModel):
-    """Request para guardar el plan de contenido generado por n8n."""
+    """Request para guardar el plan de contenido generado por n8n.
+    
+    IMPORTANTE: El body debe ser un objeto JSON con la clave "pieces"
+    que contiene un array de ContentPiecePlan.
+    
+    Formato esperado:
+    {
+        "pieces": [
+            {
+                "platform": "Instagram",
+                "type": "Reel",
+                "caption": "...",
+                "visual_script": "..."
+            }
+        ]
+    }
+    """
     pieces: list[ContentPiecePlan]
+    
+    class Config:
+        # Asegurar que se valide correctamente
+        json_schema_extra = {
+            "example": {
+                "pieces": [
+                    {
+                        "platform": "Instagram",
+                        "type": "Reel",
+                        "caption": "Texto del caption",
+                        "visual_script": "Descripción visual"
+                    }
+                ]
+            }
+        }
 
 
 class SavePlanResponse(BaseModel):
@@ -416,6 +451,18 @@ async def save_content_plan_public(
     
     No requiere autenticación de usuario, solo API key de servicio.
     Valida que la campaña exista antes de crear las piezas.
+    
+    Body esperado:
+    {
+        "pieces": [
+            {
+                "platform": "Instagram",
+                "type": "Reel",
+                "caption": "...",
+                "visual_script": "..."
+            }
+        ]
+    }
     """
     # Verificar que la campaña existe
     campaign = session.get(MarketingCampaign, campaign_id)
@@ -423,6 +470,13 @@ async def save_content_plan_public(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Campaña con ID {campaign_id} no encontrada"
+        )
+    
+    # Validar que hay piezas en el plan
+    if not plan.pieces or len(plan.pieces) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El plan debe contener al menos una pieza de contenido. Formato esperado: { 'pieces': [...] }"
         )
     
     # Crear las piezas de contenido con estado PENDING
