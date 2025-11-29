@@ -68,3 +68,11 @@ class User(SQLModel, table=True):
   role: Optional[str] = Field(default="client", max_length=50)
   is_active: bool = Field(default=True)
 
+  # CRÉDITOS MENSUALES (Se resetean cada mes - Plan Cerebro)
+  monthly_credits_video: int = Field(default=0)
+  monthly_credits_image: int = Field(default=0)
+
+  # CRÉDITOS EXTRA (Comprados - NUNCA CADUCAN)
+  extra_credits_video: int = Field(default=0)
+  extra_credits_image: int = Field(default=0)
+

@@ -24,8 +24,8 @@ from app.models.user import User, PlanTier, SubscriptionStatus
 
 
 def create_admin_user(
-    email: str = "admin@club.com",
-    password: str = "admin_prod_password",
+    email: str = "admin@baibussines.com",
+    password: str = "admin",
     full_name: str = "Administrador B.A.I.",
     plan_tier: PlanTier = PlanTier.PARTNER,
     role: str = "admin"
