@@ -192,8 +192,11 @@ export default function ConfiguracionPage() {
       alert("Campaña creada exitosamente. El contenido se está generando en segundo plano.");
     } catch (error) {
       if (error instanceof ApiError) {
-        if (error.status === 403) {
-          alert("Esta funcionalidad requiere el plan PARTNER. Actualiza tu suscripción.");
+        if (error.status === 402) {
+          // Payment Required - Créditos insuficientes
+          alert(`Créditos insuficientes: ${error.message}\n\nPor favor, compra créditos adicionales o espera a que se renueven tus créditos mensuales.`);
+        } else if (error.status === 403) {
+          alert("Esta funcionalidad requiere el plan CEREBRO o superior. Actualiza tu suscripción.");
         } else {
           alert(`Error al crear campaña: ${error.message}`);
         }

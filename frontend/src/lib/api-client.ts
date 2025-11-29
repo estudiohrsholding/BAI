@@ -127,12 +127,13 @@ export interface CampaignListResponse {
  * 
  * @param data - Datos de la campaña
  * @returns Respuesta con ID de la campaña creada
- * @throws ApiError si falla la petición
+ * @throws ApiError si falla la petición (402 si no hay créditos suficientes)
  */
 export async function createCampaign(
   data: CampaignCreateRequest
 ): Promise<CampaignCreatedResponse> {
-  return apiPost<CampaignCreatedResponse>("/api/v1/content/new-campaign", data);
+  // Usar el nuevo endpoint de marketing que gestiona créditos
+  return apiPost<CampaignCreatedResponse>("/api/v1/marketing/create-campaign", data);
 }
 
 /**

@@ -12,6 +12,7 @@ from app.api.v1.router import api_router as api_v1_router
 from app.api.routes import auth as auth_router
 from app.api.routes import data as data_router
 from app.api.routes import billing as billing_router
+from app.api.routes import marketing as marketing_router
 from app.api.deps import get_current_user
 from app.core.config import settings
 from app.core.database import create_db_and_tables, get_session
@@ -112,6 +113,7 @@ def configure_routes(app: FastAPI) -> None:
     app.include_router(auth_router.router, prefix="/api/auth", tags=["auth"])
     app.include_router(data_router.router, prefix="/api/data", tags=["data"])
     app.include_router(billing_router.router, prefix="/api/billing", tags=["billing"])
+    app.include_router(marketing_router.router, prefix="/api/v1/marketing", tags=["marketing"])
 
 
 async def root() -> dict[str, str]:
