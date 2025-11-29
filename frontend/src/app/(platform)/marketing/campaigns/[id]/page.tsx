@@ -15,11 +15,17 @@ import {
 import { cn } from "@/lib/utils";
 import { getCampaign, MarketingCampaignDetailResponse, ContentPieceResponse, ApiError } from "@/lib/api-client";
 
+// Deshabilitar caché para esta página - siempre obtener datos frescos
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 /**
  * Página de Detalle de Campaña de Marketing
  * 
  * Muestra una galería con todas las piezas de contenido generadas (vídeos e imágenes),
  * junto con sus captions y scripts visuales.
+ * 
+ * REGLA DE ORO: Si piece.media_url existe -> MUESTRA EL CONTENIDO (ignora status)
  */
 export default function MarketingCampaignDetailPage() {
   const params = useParams();
@@ -30,38 +36,56 @@ export default function MarketingCampaignDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchCampaign = async () => {
     if (!campaignId || isNaN(campaignId)) {
       setError("ID de campaña inválido");
       setIsLoading(false);
       return;
     }
 
-    const fetchCampaign = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const data = await getCampaign(campaignId);
-        setCampaign(data);
-      } catch (err) {
-        if (err instanceof ApiError) {
-          if (err.status === 404) {
-            setError("Campaña no encontrada");
-          } else if (err.status === 401) {
-            router.push("/login");
-            return;
-          } else {
-            setError(`Error al cargar la campaña: ${err.message}`);
-          }
+    try {
+      setError(null);
+      const data = await getCampaign(campaignId);
+      
+      // LOG DEBUG: Ver qué datos estamos recibiendo
+      console.log("📦 Campaign Data Received:", {
+        campaignId,
+        totalPieces: data.content_pieces.length,
+        piecesWithMedia: data.content_pieces.filter(p => p.media_url).length,
+        piecesStatuses: data.content_pieces.map(p => ({ 
+          id: p.id, 
+          status: p.status, 
+          hasMedia: !!p.media_url,
+          mediaUrl: p.media_url?.substring(0, 50) + "..."
+        }))
+      });
+      
+      setCampaign(data);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.status === 404) {
+          setError("Campaña no encontrada");
+        } else if (err.status === 401) {
+          router.push("/login");
+          return;
         } else {
-          setError("Error inesperado al cargar la campaña");
+          setError(`Error al cargar la campaña: ${err.message}`);
         }
-      } finally {
-        setIsLoading(false);
+      } else {
+        setError("Error inesperado al cargar la campaña");
       }
-    };
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchCampaign();
+    
+    // Auto-refresh cada 10 segundos para ver contenido nuevo
+    const interval = setInterval(fetchCampaign, 10000);
+    
+    return () => clearInterval(interval);
   }, [campaignId, router]);
 
   if (isLoading) {
@@ -92,7 +116,13 @@ export default function MarketingCampaignDetailPage() {
     );
   }
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (piece: ContentPieceResponse) => {
+    // REGLA DE ORO: Si tiene media_url válido, es completado (ignora el texto del status)
+    const hasValidMedia = piece.media_url && piece.media_url.trim() !== "";
+    const normalizedStatus = hasValidMedia 
+      ? "COMPLETED" 
+      : (piece.status?.toUpperCase().trim() || "PENDING");
+    
     const statusConfig: Record<string, { label: string; className: string }> = {
       COMPLETED: {
         label: "Completado",
@@ -112,7 +142,7 @@ export default function MarketingCampaignDetailPage() {
       },
     };
 
-    const config = statusConfig[status] || statusConfig.PENDING;
+    const config = statusConfig[normalizedStatus] || statusConfig.PENDING;
 
     return (
       <span
@@ -137,10 +167,36 @@ export default function MarketingCampaignDetailPage() {
     document.body.removeChild(link);
   };
 
-  // Filtrar piezas por estado
-  const completedPieces = campaign.content_pieces.filter((p) => p.status === "COMPLETED" && p.media_url);
-  const pendingPieces = campaign.content_pieces.filter((p) => p.status === "PENDING" || p.status === "GENERATING");
-  const failedPieces = campaign.content_pieces.filter((p) => p.status === "FAILED");
+  // REGLA DE ORO: Filtrar piezas basándose PRIMERO en media_url, luego en status
+  // Si tiene media_url -> es completada (sin importar el status)
+  const completedPieces = campaign.content_pieces.filter((p) => {
+    const hasMedia = p.media_url && p.media_url.trim() !== "";
+    const statusUpper = (p.status || "").toUpperCase();
+    return hasMedia || statusUpper === "COMPLETED";
+  });
+  
+  const pendingPieces = campaign.content_pieces.filter((p) => {
+    const hasMedia = p.media_url && p.media_url.trim() !== "";
+    if (hasMedia) return false; // Ya está en completedPieces
+    const statusUpper = (p.status || "").toUpperCase();
+    return statusUpper === "PENDING" || statusUpper === "GENERATING" || statusUpper === "";
+  });
+  
+  const failedPieces = campaign.content_pieces.filter((p) => {
+    const hasMedia = p.media_url && p.media_url.trim() !== "";
+    if (hasMedia) return false; // Si tiene media, no es fallida
+    const statusUpper = (p.status || "").toUpperCase();
+    return statusUpper === "FAILED";
+  });
+  
+  // LOG DEBUG: Ver cómo se filtraron las piezas
+  console.log("🎯 Pieces Filtered:", {
+    total: campaign.content_pieces.length,
+    completed: completedPieces.length,
+    pending: pendingPieces.length,
+    failed: failedPieces.length,
+    completedDetails: completedPieces.map(p => ({ id: p.id, status: p.status, hasMedia: !!p.media_url }))
+  });
 
   return (
     <div className="w-full space-y-6">
@@ -159,6 +215,17 @@ export default function MarketingCampaignDetailPage() {
             Campaña de marketing con {campaign.content_pieces.length} piezas de contenido
           </p>
         </div>
+        <button
+          onClick={() => {
+            setIsLoading(true);
+            fetchCampaign();
+          }}
+          disabled={isLoading}
+          className="flex items-center gap-2 rounded-md border border-slate-700 bg-slate-800 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 transition-colors disabled:opacity-50"
+        >
+          <Loader2 className={cn("h-4 w-4", isLoading && "animate-spin")} />
+          Actualizar
+        </button>
       </div>
 
       {/* Información de la Campaña */}
@@ -223,34 +290,66 @@ export default function MarketingCampaignDetailPage() {
                   key={piece.id}
                   className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden hover:border-slate-700 transition-colors"
                 >
-                  {/* Media Container */}
+                  {/* Media Container - REGLA DE ORO: Si hay media_url, MOSTRAR SIEMPRE */}
                   <div className="relative aspect-[9/16] bg-slate-900 overflow-hidden">
-                    {isVideo && piece.media_url ? (
-                      <video
-                        controls
-                        className="w-full h-full object-cover"
-                        src={piece.media_url}
-                        preload="metadata"
-                      />
-                    ) : piece.media_url ? (
-                      <img
-                        src={piece.media_url}
-                        alt={`${piece.platform} ${piece.type}`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-slate-800">
-                        <div className="text-center">
-                          <Loader2 className="h-8 w-8 animate-spin text-slate-400 mx-auto mb-2" />
-                          <p className="text-xs text-slate-500">La IA está cocinando...</p>
-                        </div>
-                      </div>
-                    )}
+                    {(() => {
+                      const hasValidMedia = piece.media_url && piece.media_url.trim() !== "";
+                      
+                      // LOG DEBUG por pieza
+                      if (hasValidMedia) {
+                        console.log(`✅ Rendering media for piece ${piece.id}:`, {
+                          type: isVideo ? "video" : "image",
+                          url: piece.media_url?.substring(0, 60) + "...",
+                          status: piece.status
+                        });
+                      }
+                      
+                      if (isVideo && hasValidMedia) {
+                        return (
+                          <video
+                            controls
+                            className="w-full h-full object-cover"
+                            src={piece.media_url!}
+                            preload="metadata"
+                            onError={(e) => {
+                              console.error(`❌ Error loading video for piece ${piece.id}:`, e);
+                            }}
+                            onLoadedData={() => {
+                              console.log(`✅ Video loaded successfully for piece ${piece.id}`);
+                            }}
+                          />
+                        );
+                      } else if (hasValidMedia) {
+                        return (
+                          <img
+                            src={piece.media_url!}
+                            alt={`${piece.platform} ${piece.type}`}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                            onError={(e) => {
+                              console.error(`❌ Error loading image for piece ${piece.id}:`, e);
+                            }}
+                            onLoad={() => {
+                              console.log(`✅ Image loaded successfully for piece ${piece.id}`);
+                            }}
+                          />
+                        );
+                      } else {
+                        return (
+                          <div className="w-full h-full flex items-center justify-center bg-slate-800">
+                            <div className="text-center">
+                              <Loader2 className="h-8 w-8 animate-spin text-slate-400 mx-auto mb-2" />
+                              <p className="text-xs text-slate-500">La IA está cocinando...</p>
+                              <p className="text-xs text-slate-600 mt-1">Status: {piece.status || "PENDING"}</p>
+                            </div>
+                          </div>
+                        );
+                      }
+                    })()}
 
-                    {/* Status Badge Overlay */}
+                    {/* Status Badge Overlay - Usa la función que prioriza media_url */}
                     <div className="absolute top-2 right-2">
-                      {getStatusBadge(piece.status)}
+                      {getStatusBadge(piece)}
                     </div>
 
                     {/* Download Button */}

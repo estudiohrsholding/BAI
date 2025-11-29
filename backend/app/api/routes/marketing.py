@@ -713,6 +713,10 @@ async def update_content_media_public(
     # Parsear el body JSON (acepta cualquier estructura)
     try:
         payload: Dict[str, Any] = await request.json()
+        # LOG DEBUG: Ver el payload completo recibido
+        print(f"📦 Received webhook payload for piece {piece_id}:")
+        print(f"   - Payload keys: {list(payload.keys())}")
+        print(f"   - Payload preview: {str(payload)[:500]}...")
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -722,6 +726,13 @@ async def update_content_media_public(
     # Extraer la URL del media usando el adaptador universal
     media_url = extract_media_url_from_payload(payload)
     
+    # LOG DEBUG: Ver si se encontró la URL
+    if media_url:
+        print(f"✅ Extracted media URL: {media_url[:100]}...")
+    else:
+        print(f"⚠️  Could not extract media URL from payload")
+        print(f"   - Payload structure: {str(payload)[:1000]}")
+    
     if not media_url:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -730,16 +741,27 @@ async def update_content_media_public(
     
     # Actualizar el media_url y el estado
     try:
+        # LOG DEBUG: Ver qué estamos recibiendo
+        print(f"🔄 Updating content piece {piece_id}:")
+        print(f"   - Previous status: {content_piece.status}")
+        print(f"   - Previous media_url: {content_piece.media_url}")
+        print(f"   - New media_url: {media_url[:100] if media_url else None}...")
+        
         content_piece.media_url = media_url
-        content_piece.status = "COMPLETED"
+        content_piece.status = "COMPLETED"  # Normalizar a mayúsculas
         content_piece.updated_at = datetime.now(timezone.utc)
         
         session.add(content_piece)
         session.commit()
         session.refresh(content_piece)
         
+        print(f"✅ Successfully updated piece {piece_id}:")
+        print(f"   - New status: {content_piece.status}")
+        print(f"   - New media_url: {content_piece.media_url[:100] if content_piece.media_url else None}...")
+        
     except Exception as e:
         session.rollback()
+        print(f"❌ Error updating piece {piece_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error al actualizar el media: {str(e)}"
@@ -854,7 +876,11 @@ async def list_marketing_campaigns(
         pieces_statement = select(ContentPiece).where(ContentPiece.campaign_id == campaign.id)
         all_pieces = session.exec(pieces_statement).all()
         total_pieces = len(all_pieces)
-        completed_pieces = len([p for p in all_pieces if p.status == "COMPLETED"])
+        # REGLA DE ORO: Si tiene media_url, es completada (independientemente del status)
+        completed_pieces = len([
+            p for p in all_pieces 
+            if (p.media_url and p.media_url.strip()) or (p.status and p.status.upper() == "COMPLETED")
+        ])
         
         campaign_responses.append(
             MarketingCampaignListItemResponse(
