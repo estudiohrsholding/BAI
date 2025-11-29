@@ -20,6 +20,7 @@ from app.services.bai_brain import get_bai_response, get_widget_response
 from app.models.chat import ChatMessage  # Import to register the model
 from app.models.user import User  # Import to register the model
 from app.models.log import SearchLog  # Import to register the model
+from app.models.content import MarketingCampaign, ContentPiece  # Import to register the models
 from app.workers.settings import WorkerSettings
 
 

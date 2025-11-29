@@ -56,6 +56,7 @@ class Settings(BaseSettings):
   # n8n Integration Configuration
   N8N_GENERATION_WEBHOOK_URL: str | None = None  # URL del webhook de n8n para generación de contenido
   INTERNAL_WEBHOOK_SECRET: str | None = None  # Secret para validar callbacks de n8n
+  N8N_SERVICE_API_KEY: str | None = None  # API Key para que n8n llame a endpoints internos
   
   # Observability
   ENVIRONMENT: str = "development"
