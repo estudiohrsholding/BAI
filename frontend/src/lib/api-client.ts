@@ -123,6 +123,58 @@ export interface CampaignListResponse {
   total: number;
 }
 
+// ============================================================================
+// MARKETING CAMPAIGNS (Nuevo sistema con MarketingCampaign y ContentPiece)
+// ============================================================================
+
+export interface ContentPieceResponse {
+  id: number;
+  campaign_id: number;
+  platform: string;
+  type: string;
+  caption: string;
+  visual_script: string;
+  media_url: string | null;
+  status: string;
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface MarketingCampaignDetailResponse {
+  id: number;
+  user_id: number;
+  name: string;
+  influencer_name: string;
+  tone_of_voice: string;
+  topic: string;
+  platforms: string[];
+  content_count: number;
+  status: string;
+  created_at: string;
+  updated_at: string | null;
+  content_pieces: ContentPieceResponse[];
+}
+
+export interface MarketingCampaignListItemResponse {
+  id: number;
+  name: string;
+  influencer_name: string;
+  tone_of_voice: string;
+  topic: string;
+  platforms: string[];
+  content_count: number;
+  status: string;
+  created_at: string;
+  updated_at: string | null;
+  completed_pieces_count: number;
+  total_pieces_count: number;
+}
+
+export interface MarketingCampaignListResponse {
+  campaigns: MarketingCampaignListItemResponse[];
+  total: number;
+}
+
 /**
  * Crear una nueva campaña de contenido
  * 
@@ -138,31 +190,31 @@ export async function createCampaign(
 }
 
 /**
- * Obtener lista de campañas del usuario
+ * Obtener lista de campañas del usuario (NUEVO SISTEMA - MarketingCampaign)
  * 
  * @param limit - Número máximo de resultados
  * @param offset - Offset para paginación
- * @returns Lista de campañas
+ * @returns Lista de campañas de marketing
  * @throws ApiError si falla la petición
  */
 export async function getCampaigns(
   limit: number = 50,
   offset: number = 0
-): Promise<CampaignListResponse> {
-  return apiGet<CampaignListResponse>(
-    `/api/v1/content/campaigns?limit=${limit}&offset=${offset}`
+): Promise<MarketingCampaignListResponse> {
+  return apiGet<MarketingCampaignListResponse>(
+    `/api/v1/marketing/campaigns?limit=${limit}&offset=${offset}`
   );
 }
 
 /**
- * Obtener una campaña específica
+ * Obtener una campaña específica (NUEVO SISTEMA - MarketingCampaign con ContentPieces)
  * 
  * @param campaignId - ID de la campaña
- * @returns Detalles de la campaña
+ * @returns Detalles de la campaña con piezas de contenido anidadas
  * @throws ApiError si falla la petición
  */
-export async function getCampaign(campaignId: number): Promise<CampaignResponse> {
-  return apiGet<CampaignResponse>(`/api/v1/content/campaigns/${campaignId}`);
+export async function getCampaign(campaignId: number): Promise<MarketingCampaignDetailResponse> {
+  return apiGet<MarketingCampaignDetailResponse>(`/api/v1/marketing/campaign/${campaignId}`);
 }
 
 /**

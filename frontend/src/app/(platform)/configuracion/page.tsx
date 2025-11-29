@@ -22,7 +22,7 @@ import {
   createCampaign,
   getCampaigns,
   CampaignCreateRequest,
-  CampaignResponse,
+  MarketingCampaignListItemResponse,
   launchMonthlyCampaign,
   getMonthlyCampaigns,
   ContentCampaignCreateRequest,
@@ -81,7 +81,7 @@ export default function ConfiguracionPage() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [contentCount, setContentCount] = useState(10);
   const [isCreatingCampaign, setIsCreatingCampaign] = useState(false);
-  const [campaigns, setCampaigns] = useState<CampaignResponse[]>([]);
+  const [campaigns, setCampaigns] = useState<MarketingCampaignListItemResponse[]>([]);
   const [isLoadingCampaigns, setIsLoadingCampaigns] = useState(false);
 
   useEffect(() => {
@@ -1074,67 +1074,48 @@ export default function ConfiguracionPage() {
                               <span className="text-slate-300">{campaign.tone_of_voice}</span>
                             </p>
                           </div>
-                        </div>
-
-                        {/* Status Tracker Component (Polling cada 5 segundos) */}
-                        {campaign.arq_job_id && (
-                          <div className="mb-3">
-                            <CampaignStatusList
-                              campaignId={campaign.id}
-                              campaignName={campaign.name}
-                              onStatusUpdate={(status) => {
-                                // Actualizar estado local si el job cambió
-                                if (status.campaign_status !== campaign.status) {
-                                  // Recargar lista para sincronizar con DB
-                                  loadCampaigns();
-                                }
-                              }}
-                            />
+                          <div className="flex items-center gap-2">
+                            {/* Botón "Ver Resultados" - Visible si hay piezas completadas */}
+                            {(campaign.total_pieces_count > 0 || campaign.status === "completed" || campaign.status === "in_progress") && (
+                              <button
+                                onClick={() => router.push(`/marketing/campaigns/${campaign.id}`)}
+                                className="flex items-center gap-1.5 rounded-md border-2 border-amber-500 bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-500 hover:border-amber-400 transition-all shadow-lg shadow-amber-500/20 whitespace-nowrap"
+                              >
+                                <Eye className="h-3.5 w-3.5" />
+                                {campaign.completed_pieces_count > 0 ? `Ver Resultados (${campaign.completed_pieces_count}/${campaign.total_pieces_count})` : "Ver Campaña"}
+                              </button>
+                            )}
                           </div>
-                        )}
-
-                        <div className="flex items-center gap-4 text-xs text-slate-500 mb-3">
-                          <span>
-                            Plataformas: {campaign.platforms.join(", ")}
-                          </span>
-                          <span>•</span>
-                          <span>{campaign.content_count} piezas</span>
                         </div>
 
-                        {/* Progress Bar (fallback si no hay job_id) */}
-                        {!campaign.arq_job_id && campaign.status === "in_progress" && (
+                        {/* Progress Bar basado en piezas completadas */}
+                        {campaign.total_pieces_count > 0 && (
                           <div className="mb-3">
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="text-xs text-slate-400">Progreso de Generación</span>
+                              <span className="text-xs font-medium text-slate-300">
+                                {campaign.completed_pieces_count}/{campaign.total_pieces_count}
+                              </span>
+                            </div>
                             <div className="h-2 w-full bg-slate-800 rounded-full overflow-hidden">
-                              <div className="h-full bg-gradient-to-r from-amber-500 to-yellow-500 animate-pulse" style={{ width: "60%" }} />
-                            </div>
-                            <p className="text-xs text-slate-400 mt-1">
-                              Generando contenido... Esto puede tardar varios minutos.
-                            </p>
-                          </div>
-                        )}
-
-                        {campaign.status === "completed" && campaign.generated_content && (
-                          <div className="rounded-md border border-emerald-500/30 bg-emerald-500/10 p-3 mb-3">
-                            <p className="text-xs font-medium text-emerald-400 mb-2">
-                              ✓ Contenido Generado
-                            </p>
-                            <div className="space-y-1 text-xs text-slate-300">
-                              {Object.entries(campaign.generated_content.platforms || {}).map(
-                                ([platform, content]: [string, any]) => (
-                                  <div key={platform}>
-                                    <span className="text-slate-400">{platform}:</span>{" "}
-                                    {Array.isArray(content) ? content.length : 0} piezas
-                                  </div>
-                                )
-                              )}
+                              <div
+                                className={cn(
+                                  "h-full rounded-full transition-all duration-500",
+                                  campaign.completed_pieces_count === campaign.total_pieces_count
+                                    ? "bg-emerald-500"
+                                    : "bg-gradient-to-r from-amber-500 to-yellow-500"
+                                )}
+                                style={{ width: `${(campaign.completed_pieces_count / campaign.total_pieces_count) * 100}%` }}
+                              />
                             </div>
                           </div>
                         )}
 
-                        {campaign.error_message && (
-                          <div className="rounded-md border border-red-500/30 bg-red-500/10 p-3">
-                            <p className="text-xs font-medium text-red-400">
-                              Error: {campaign.error_message}
+                        {/* Mensaje de progreso */}
+                        {campaign.status === "in_progress" && campaign.total_pieces_count === 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs text-slate-400">
+                              ⏳ Generando plan de contenido... Esto puede tardar unos minutos.
                             </p>
                           </div>
                         )}

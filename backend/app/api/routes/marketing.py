@@ -7,8 +7,8 @@ Las campañas se envían a n8n para su procesamiento asíncrono.
 
 from fastapi import APIRouter, Depends, HTTPException, status, Header, Request
 from pydantic import BaseModel
-from sqlmodel import Session
-from typing import Any, Dict
+from sqlmodel import Session, select
+from typing import Any, Dict, List
 import httpx
 import os
 import re
@@ -750,5 +750,207 @@ async def update_content_media_public(
         message=f"Media actualizado exitosamente para la pieza {piece_id}",
         piece_id=piece_id,
         media_url=media_url
+    )
+
+
+# ============================================================================
+# ENDPOINTS GET PARA LISTAR Y OBTENER CAMPAÑAS
+# ============================================================================
+
+class ContentPieceResponse(BaseModel):
+    """Response model para una pieza de contenido."""
+    id: int
+    campaign_id: int
+    platform: str
+    type: str
+    caption: str
+    visual_script: str
+    media_url: str | None
+    status: str
+    created_at: datetime
+    updated_at: datetime | None
+
+
+class MarketingCampaignDetailResponse(BaseModel):
+    """Response model para los detalles completos de una campaña de marketing."""
+    id: int
+    user_id: int
+    name: str
+    influencer_name: str
+    tone_of_voice: str
+    topic: str
+    platforms: list[str]  # Lista parseada desde el string
+    content_count: int
+    status: str
+    created_at: datetime
+    updated_at: datetime | None
+    content_pieces: List[ContentPieceResponse] = []  # Piezas de contenido anidadas
+
+
+class MarketingCampaignListItemResponse(BaseModel):
+    """Response model para un item en la lista de campañas."""
+    id: int
+    name: str
+    influencer_name: str
+    tone_of_voice: str
+    topic: str
+    platforms: list[str]
+    content_count: int
+    status: str
+    created_at: datetime
+    updated_at: datetime | None
+    completed_pieces_count: int  # Número de piezas completadas
+    total_pieces_count: int  # Número total de piezas
+
+
+class MarketingCampaignListResponse(BaseModel):
+    """Response model para la lista de campañas."""
+    campaigns: List[MarketingCampaignListItemResponse]
+    total: int
+
+
+@router.get("/campaigns", response_model=MarketingCampaignListResponse)
+async def list_marketing_campaigns(
+    current_user: User = Depends(requires_feature("access_marketing")),
+    session: Session = Depends(get_session),
+    limit: int = 50,
+    offset: int = 0
+) -> MarketingCampaignListResponse:
+    """
+    Lista todas las campañas de marketing del usuario autenticado.
+    
+    Incluye información sobre el progreso (piezas completadas vs total).
+    
+    Args:
+        current_user: Usuario autenticado
+        session: Sesión de base de datos
+        limit: Número máximo de resultados (default: 50)
+        offset: Offset para paginación (default: 0)
+        
+    Returns:
+        MarketingCampaignListResponse con lista de campañas y total
+    """
+    # Obtener campañas del usuario
+    statement = (
+        select(MarketingCampaign)
+        .where(MarketingCampaign.user_id == current_user.id)
+        .order_by(MarketingCampaign.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    campaigns = session.exec(statement).all()
+    
+    # Contar total (para paginación)
+    count_statement = select(MarketingCampaign).where(MarketingCampaign.user_id == current_user.id)
+    total_campaigns = len(session.exec(count_statement).all())
+    
+    # Para cada campaña, contar piezas completadas
+    campaign_responses = []
+    for campaign in campaigns:
+        # Parsear platforms (puede ser string separado por comas)
+        platforms_list = campaign.platforms.split(",") if isinstance(campaign.platforms, str) else campaign.platforms
+        
+        # Contar piezas de contenido
+        pieces_statement = select(ContentPiece).where(ContentPiece.campaign_id == campaign.id)
+        all_pieces = session.exec(pieces_statement).all()
+        total_pieces = len(all_pieces)
+        completed_pieces = len([p for p in all_pieces if p.status == "COMPLETED"])
+        
+        campaign_responses.append(
+            MarketingCampaignListItemResponse(
+                id=campaign.id,
+                name=campaign.name,
+                influencer_name=campaign.influencer_name,
+                tone_of_voice=campaign.tone_of_voice,
+                topic=campaign.topic,
+                platforms=platforms_list,
+                content_count=campaign.content_count,
+                status=campaign.status,
+                created_at=campaign.created_at,
+                updated_at=campaign.updated_at,
+                completed_pieces_count=completed_pieces,
+                total_pieces_count=total_pieces
+            )
+        )
+    
+    return MarketingCampaignListResponse(
+        campaigns=campaign_responses,
+        total=total_campaigns
+    )
+
+
+@router.get("/campaign/{campaign_id}", response_model=MarketingCampaignDetailResponse)
+async def get_marketing_campaign(
+    campaign_id: int,
+    current_user: User = Depends(requires_feature("access_marketing")),
+    session: Session = Depends(get_session)
+) -> MarketingCampaignDetailResponse:
+    """
+    Obtiene los detalles completos de una campaña de marketing, incluyendo todas sus piezas de contenido.
+    
+    Args:
+        campaign_id: ID de la campaña
+        current_user: Usuario autenticado
+        session: Sesión de base de datos
+        
+    Returns:
+        MarketingCampaignDetailResponse con campaña y piezas anidadas
+        
+    Raises:
+        HTTPException 404 si la campaña no existe o no pertenece al usuario
+    """
+    # Obtener campaña
+    campaign = session.get(MarketingCampaign, campaign_id)
+    
+    if not campaign:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Campaña con ID {campaign_id} no encontrada"
+        )
+    
+    # Verificar que pertenece al usuario
+    if campaign.user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Campaña no encontrada"
+        )
+    
+    # Obtener piezas de contenido
+    pieces_statement = select(ContentPiece).where(ContentPiece.campaign_id == campaign_id)
+    pieces = session.exec(pieces_statement).all()
+    
+    # Parsear platforms
+    platforms_list = campaign.platforms.split(",") if isinstance(campaign.platforms, str) else campaign.platforms
+    
+    # Construir respuesta con piezas anidadas
+    content_pieces = [
+        ContentPieceResponse(
+            id=piece.id,
+            campaign_id=piece.campaign_id,
+            platform=piece.platform,
+            type=piece.type,
+            caption=piece.caption,
+            visual_script=piece.visual_script,
+            media_url=piece.media_url,
+            status=piece.status,
+            created_at=piece.created_at,
+            updated_at=piece.updated_at
+        )
+        for piece in pieces
+    ]
+    
+    return MarketingCampaignDetailResponse(
+        id=campaign.id,
+        user_id=campaign.user_id,
+        name=campaign.name,
+        influencer_name=campaign.influencer_name,
+        tone_of_voice=campaign.tone_of_voice,
+        topic=campaign.topic,
+        platforms=platforms_list,
+        content_count=campaign.content_count,
+        status=campaign.status,
+        created_at=campaign.created_at,
+        updated_at=campaign.updated_at,
+        content_pieces=content_pieces
     )
 
