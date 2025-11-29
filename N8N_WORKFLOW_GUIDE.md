@@ -19,7 +19,8 @@ Configura estas variables en n8n (Settings → Environment Variables):
 ```
 BAI_API_URL=https://api.baibussines.com
 N8N_SERVICE_API_KEY=tu_api_key_secreta_muy_larga
-PIAPI_API_KEY=tu_api_key_de_piapi
+FAL_API_KEY=tu_fal_ai_key (recomendado)
+PIAPI_API_KEY=tu_api_key_de_piapi (opcional, alternativo)
 BLOTATO_API_KEY=tu_api_key_de_blotato (opcional)
 GEMINI_API_KEY=tu_gemini_key (para generar el plan)
 ```
@@ -245,17 +246,17 @@ return combined.map(item => ({ json: item }));
 
 ---
 
-### **NODO 7A: Generar Imagen (PiAPI/Midjourney)**
+### **NODO 7A: Generar Imagen (Fal.ai / PiAPI)**
 
 **Tipo:** HTTP Request  
-**Nombre:** `Generate Image - PiAPI`
+**Nombre:** `Generate Image - Fal.ai`
 
-**Configuración:**
+**Configuración (Fal.ai - Recomendado):**
 - **Method:** POST
-- **URL:** `https://api.piapi.ai/midjourney/v2/imagine`
+- **URL:** `https://fal.run/fal-ai/flux-pro/v1.1`
 - **Authentication:** Header
-  - **Name:** `x-api-key`
-  - **Value:** `{{ $env.PIAPI_API_KEY }}`
+  - **Name:** `Authorization`
+  - **Value:** `Key {{ $env.FAL_API_KEY }}`
 - **Headers:**
   ```
   Content-Type: application/json
@@ -263,34 +264,65 @@ return combined.map(item => ({ json: item }));
 - **Body (JSON):**
 ```json
 {
-  "prompt": "{{ $json.visual_script }} --ar 4:5 --v 6.0",
-  "webhook_url": "{{ $env.BAI_API_URL }}/api/v1/webhooks/media-ready?piece_id={{ $json.id }}"
+  "prompt": "{{ $json.visual_script }}",
+  "image_size": "landscape_4_3",
+  "webhook_url": "{{ $env.BAI_API_URL }}/api/v1/marketing/public/content/{{ $json.id }}/update-media",
+  "webhook_secret": "{{ $env.N8N_SERVICE_API_KEY }}"
 }
 ```
 
-**Nota sobre Webhooks Asíncronos:**
+**Configuración Alternativa (PiAPI/Midjourney):**
+- **Method:** POST
+- **URL:** `https://api.piapi.ai/midjourney/v2/imagine`
+- **Authentication:** Header
+  - **Name:** `x-api-key`
+  - **Value:** `{{ $env.PIAPI_API_KEY }}`
+- **Body (JSON):**
+```json
+{
+  "prompt": "{{ $json.visual_script }} --ar 4:5 --v 6.0",
+  "webhook_url": "{{ $env.BAI_API_URL }}/api/v1/marketing/public/content/{{ $json.id }}/update-media"
+}
+```
 
-Si PiAPI es asíncrono (tarda 1-2 minutos), tienes dos opciones:
+**⚠️ IMPORTANTE - Webhook de Fal.ai:**
 
-**Opción A: Webhook de Respuesta (Recomendado)**
-- PiAPI llama a tu webhook cuando la imagen está lista
-- Crea un nuevo webhook en n8n: `media-ready`
-- Ese webhook llama a `PATCH /content/{piece_id}/update-media`
+Fal.ai enviará el callback directamente a tu backend cuando la imagen esté lista. El endpoint `/public/content/{piece_id}/update-media` es un **Adaptador Universal** que entiende múltiples formatos:
 
-**Opción B: Polling (Si no hay webhook)**
-- Después de este nodo, añade un nodo "Wait" (30 segundos)
-- Luego un nodo "HTTP Request" que consulta el estado: `GET https://api.piapi.ai/midjourney/v2/status/{{ $json.task_id }}`
-- Repite hasta que `status === "completed"`
-- Luego extrae `media_url` y llama a `update-media`
+- ✅ `{ "images": [{ "url": "..." }] }` (Fal.ai)
+- ✅ `{ "video": { "url": "..." } }` (Fal.ai)
+- ✅ `{ "media_url": "..." }` (Genérico)
+- ✅ Cualquier JSON con una URL válida (búsqueda recursiva)
+
+**No necesitas crear un webhook intermedio en n8n.** Fal.ai llama directamente al backend.
 
 ---
 
-### **NODO 7B: Generar Video (Blotato/PiAPI)**
+### **NODO 7B: Generar Video (Fal.ai / Blotato / PiAPI)**
 
 **Tipo:** HTTP Request  
-**Nombre:** `Generate Video - Blotato`
+**Nombre:** `Generate Video - Fal.ai`
 
-**Configuración (Blotato - Talking Head):**
+**Configuración (Fal.ai - Recomendado):**
+- **Method:** POST
+- **URL:** `https://fal.run/fal-ai/fast-svd`
+- **Authentication:** Header
+  - **Name:** `Authorization`
+  - **Value:** `Key {{ $env.FAL_API_KEY }}`
+- **Headers:**
+  ```
+  Content-Type: application/json
+  ```
+- **Body (JSON):**
+```json
+{
+  "image_url": "{{ $json.visual_script }}",
+  "webhook_url": "{{ $env.BAI_API_URL }}/api/v1/marketing/public/content/{{ $json.id }}/update-media",
+  "webhook_secret": "{{ $env.N8N_SERVICE_API_KEY }}"
+}
+```
+
+**Configuración Alternativa (Blotato - Talking Head):**
 - **Method:** POST
 - **URL:** `https://api.blotato.com/v1/videos/generate`
 - **Authentication:** Bearer Token
@@ -301,7 +333,7 @@ Si PiAPI es asíncrono (tarda 1-2 minutos), tienes dos opciones:
   "avatar_id": "tu_avatar_id",
   "script": "{{ $json.caption }}",
   "background": "{{ $json.visual_script }}",
-  "webhook_url": "{{ $env.BAI_API_URL }}/api/v1/webhooks/media-ready?piece_id={{ $json.id }}"
+  "webhook_url": "{{ $env.BAI_API_URL }}/api/v1/marketing/public/content/{{ $json.id }}/update-media"
 }
 ```
 
@@ -313,13 +345,37 @@ Si PiAPI es asíncrono (tarda 1-2 minutos), tienes dos opciones:
 {
   "prompt": "{{ $json.visual_script }}",
   "duration": 10,
-  "webhook_url": "{{ $env.BAI_API_URL }}/api/v1/webhooks/media-ready?piece_id={{ $json.id }}"
+  "webhook_url": "{{ $env.BAI_API_URL }}/api/v1/marketing/public/content/{{ $json.id }}/update-media"
 }
 ```
 
+**⚠️ IMPORTANTE - Webhook de Fal.ai:**
+
+Fal.ai enviará el callback directamente a tu backend cuando el video esté listo. El endpoint es un **Adaptador Universal** que entiende:
+- ✅ `{ "video": { "url": "..." } }` (Fal.ai)
+- ✅ `{ "media_url": "..." }` (Genérico)
+- ✅ Cualquier formato (búsqueda recursiva)
+
 ---
 
-### **NODO 8: Webhook de Respuesta (Media Ready)**
+### **⚠️ NOTA: Webhook Directo (Fal.ai)**
+
+**Con Fal.ai, NO necesitas los nodos 8 y 9.** Fal.ai llama directamente al endpoint del backend:
+
+```
+{{ $env.BAI_API_URL }}/api/v1/marketing/public/content/{{ $json.id }}/update-media
+```
+
+El backend es un **Adaptador Universal** que:
+- ✅ Acepta cualquier formato de callback de Fal.ai
+- ✅ Extrae la URL automáticamente
+- ✅ Actualiza la base de datos
+
+**Si usas otro proveedor que requiere webhook intermedio:**
+
+### **NODO 8: Webhook de Respuesta (Media Ready) - OPCIONAL**
+
+Solo necesario si tu proveedor no puede llamar directamente al backend.
 
 **Tipo:** Webhook  
 **Nombre:** `media-ready`
@@ -329,19 +385,9 @@ Si PiAPI es asíncrono (tarda 1-2 minutos), tienes dos opciones:
 - **Path:** `media-ready`
 - **Query Parameters:** `piece_id` (opcional, puede venir en body)
 
-**Datos que recibe (ejemplo PiAPI):**
-```json
-{
-  "task_id": "abc123",
-  "status": "completed",
-  "media_url": "https://cdn.piapi.ai/images/xyz.jpg",
-  "piece_id": 5  // Si lo pasaste en webhook_url
-}
-```
+### **NODO 9: Actualizar Media en Base de Datos - OPCIONAL**
 
----
-
-### **NODO 9: Actualizar Media en Base de Datos**
+Solo necesario si usas webhook intermedio.
 
 **Tipo:** HTTP Request  
 **Nombre:** `Update Media URL`
@@ -361,6 +407,9 @@ Si PiAPI es asíncrono (tarda 1-2 minutos), tienes dos opciones:
   "media_url": "{{ $json.media_url }}"
 }
 ```
+
+**O simplemente reenvía el payload completo** (el adaptador lo procesará):
+- **Body (JSON):** `{{ $json }}`
 
 ---
 
