@@ -786,7 +786,7 @@ async def save_content_plan_public(
     )
 
 
-@router.post("/public/content/{piece_id}/update-media", response_model=UpdateMediaResponse)
+@router.patch("/public/content/{piece_id}/update-media")
 async def update_content_media_public(
     piece_id: int,
     request: Request,
