@@ -268,12 +268,53 @@ class SavePlanRequest(BaseModel):
         }
 
 
+# ============================================================================
+# MODELOS DE RESPUESTA (definidos aquí para usar en SavePlanResponse)
+# ============================================================================
+
+class ContentPieceResponse(BaseModel):
+    """Response model para una pieza de contenido."""
+    id: int
+    campaign_id: int
+    platform: str
+    type: str
+    caption: str
+    visual_script: str
+    media_url: str | None
+    status: str
+    created_at: datetime
+    updated_at: datetime | None
+
+
 class SavePlanResponse(BaseModel):
-    """Response con los IDs de las piezas creadas."""
+    """Response con las piezas completas creadas (incluyendo IDs reales de DB)."""
     status: str
     message: str
-    piece_ids: list[int]
     campaign_id: int
+    pieces: List[ContentPieceResponse] = []  # Lista completa de piezas con IDs reales
+    
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "status": "success",
+                "message": "Plan guardado exitosamente. 3 piezas creadas.",
+                "campaign_id": 123,
+                "pieces": [
+                    {
+                        "id": 50,
+                        "campaign_id": 123,
+                        "platform": "Instagram",
+                        "type": "Reel",
+                        "caption": "Texto del caption",
+                        "visual_script": "Descripción visual",
+                        "media_url": None,
+                        "status": "PENDING",
+                        "created_at": "2025-11-30T10:00:00Z",
+                        "updated_at": None
+                    }
+                ]
+            }
+        }
 
 
 @router.post("/campaign/{campaign_id}/save-plan", response_model=SavePlanResponse)
@@ -298,7 +339,7 @@ async def save_content_plan(
         session: Sesión de base de datos
         
     Returns:
-        SavePlanResponse con los IDs de las piezas creadas
+        SavePlanResponse con la lista completa de piezas creadas (incluyendo IDs reales de DB, caption, visual_script, etc.)
         
     Raises:
         HTTPException 404 si la campaña no existe o no pertenece al usuario
@@ -319,7 +360,7 @@ async def save_content_plan(
         )
     
     # Crear las piezas de contenido con estado PENDING
-    piece_ids = []
+    created_pieces = []
     try:
         for piece_data in plan.pieces:
             content_piece = ContentPiece(
@@ -333,7 +374,7 @@ async def save_content_plan(
             )
             session.add(content_piece)
             session.flush()  # Para obtener el ID sin hacer commit
-            piece_ids.append(content_piece.id)
+            created_pieces.append(content_piece)
         
         # Actualizar el estado de la campaña a "in_progress"
         campaign.status = "in_progress"
@@ -342,6 +383,10 @@ async def save_content_plan(
         
         session.commit()
         
+        # REFRESCAR todas las piezas para obtener los datos completos de la DB
+        for piece in created_pieces:
+            session.refresh(piece)
+        
     except Exception as e:
         session.rollback()
         raise HTTPException(
@@ -349,11 +394,34 @@ async def save_content_plan(
             detail=f"Error al guardar el plan de contenido: {str(e)}"
         )
     
+    # Construir respuesta con piezas completas (incluyendo IDs reales)
+    pieces_response = [
+        ContentPieceResponse(
+            id=piece.id,
+            campaign_id=piece.campaign_id,
+            platform=piece.platform,
+            type=piece.type,
+            caption=piece.caption,
+            visual_script=piece.visual_script,
+            media_url=piece.media_url,
+            status=piece.status,
+            created_at=piece.created_at,
+            updated_at=piece.updated_at
+        )
+        for piece in created_pieces
+    ]
+    
+    # LOG DEBUG: Ver qué estamos devolviendo
+    print(f"✅ Save Plan Response for campaign {campaign_id}:")
+    print(f"   - Total pieces created: {len(pieces_response)}")
+    for p in pieces_response:
+        print(f"   - Piece ID {p.id}: platform='{p.platform}', type='{p.type}', visual_script_length={len(p.visual_script)}")
+    
     return SavePlanResponse(
         status="success",
-        message=f"Plan guardado exitosamente. {len(piece_ids)} piezas creadas.",
-        piece_ids=piece_ids,
-        campaign_id=campaign_id
+        message=f"Plan guardado exitosamente. {len(pieces_response)} piezas creadas.",
+        campaign_id=campaign_id,
+        pieces=pieces_response
     )
 
 
@@ -600,6 +668,32 @@ async def save_content_plan_public(
             }
         ]
     }
+    
+    Returns:
+        SavePlanResponse con la lista completa de piezas creadas (incluyendo IDs reales de DB).
+        Esto permite que n8n use los IDs reales en los siguientes pasos del workflow, evitando
+        usar los IDs ficticios que la IA genera.
+        
+        Formato de respuesta:
+        {
+            "status": "success",
+            "message": "Plan guardado exitosamente. 3 piezas creadas.",
+            "campaign_id": 123,
+            "pieces": [
+                {
+                    "id": 50,  // ID REAL de la base de datos
+                    "campaign_id": 123,
+                    "platform": "Instagram",
+                    "type": "Reel",
+                    "caption": "...",
+                    "visual_script": "...",
+                    "media_url": null,
+                    "status": "PENDING",
+                    "created_at": "2025-11-30T10:00:00Z",
+                    "updated_at": null
+                }
+            ]
+        }
     """
     # Verificar que la campaña existe
     campaign = session.get(MarketingCampaign, campaign_id)
@@ -617,7 +711,7 @@ async def save_content_plan_public(
         )
     
     # Crear las piezas de contenido con estado PENDING
-    piece_ids = []
+    created_pieces = []
     try:
         for piece_data in plan.pieces:
             content_piece = ContentPiece(
@@ -630,8 +724,8 @@ async def save_content_plan_public(
                 created_at=datetime.now(timezone.utc)
             )
             session.add(content_piece)
-            session.flush()
-            piece_ids.append(content_piece.id)
+            session.flush()  # Para obtener el ID sin hacer commit
+            created_pieces.append(content_piece)
         
         # Actualizar el estado de la campaña a "in_progress"
         campaign.status = "in_progress"
@@ -640,6 +734,10 @@ async def save_content_plan_public(
         
         session.commit()
         
+        # REFRESCAR todas las piezas para obtener los datos completos de la DB
+        for piece in created_pieces:
+            session.refresh(piece)
+        
     except Exception as e:
         session.rollback()
         raise HTTPException(
@@ -647,11 +745,34 @@ async def save_content_plan_public(
             detail=f"Error al guardar el plan de contenido: {str(e)}"
         )
     
+    # Construir respuesta con piezas completas (incluyendo IDs reales)
+    pieces_response = [
+        ContentPieceResponse(
+            id=piece.id,
+            campaign_id=piece.campaign_id,
+            platform=piece.platform,
+            type=piece.type,
+            caption=piece.caption,
+            visual_script=piece.visual_script,
+            media_url=piece.media_url,
+            status=piece.status,
+            created_at=piece.created_at,
+            updated_at=piece.updated_at
+        )
+        for piece in created_pieces
+    ]
+    
+    # LOG DEBUG: Ver qué estamos devolviendo
+    print(f"✅ Save Plan (PUBLIC) Response for campaign {campaign_id}:")
+    print(f"   - Total pieces created: {len(pieces_response)}")
+    for p in pieces_response:
+        print(f"   - Piece ID {p.id}: platform='{p.platform}', type='{p.type}', visual_script_length={len(p.visual_script)}")
+    
     return SavePlanResponse(
         status="success",
-        message=f"Plan guardado exitosamente. {len(piece_ids)} piezas creadas.",
-        piece_ids=piece_ids,
-        campaign_id=campaign_id
+        message=f"Plan guardado exitosamente. {len(pieces_response)} piezas creadas.",
+        campaign_id=campaign_id,
+        pieces=pieces_response
     )
 
 
@@ -779,19 +900,7 @@ async def update_content_media_public(
 # ENDPOINTS GET PARA LISTAR Y OBTENER CAMPAÑAS
 # ============================================================================
 
-class ContentPieceResponse(BaseModel):
-    """Response model para una pieza de contenido."""
-    id: int
-    campaign_id: int
-    platform: str
-    type: str
-    caption: str
-    visual_script: str
-    media_url: str | None
-    status: str
-    created_at: datetime
-    updated_at: datetime | None
-
+# ContentPieceResponse ya está definido arriba, no duplicar
 
 class MarketingCampaignDetailResponse(BaseModel):
     """Response model para los detalles completos de una campaña de marketing."""
