@@ -226,6 +226,7 @@ class ContentPiecePlan(BaseModel):
     type: str  # Reel, Post, Story, etc.
     caption: str
     visual_script: str
+    style: str | None = "cinematic"  # "cinematic" o "avatar" - estilo de video para decidir herramienta
     
     class Config:
         # Permitir nombres de campo con alias si es necesario
@@ -261,7 +262,8 @@ class SavePlanRequest(BaseModel):
                         "platform": "Instagram",
                         "type": "Reel",
                         "caption": "Texto del caption",
-                        "visual_script": "Descripción visual"
+                        "visual_script": "Descripción visual",
+                        "style": "cinematic"
                     }
                 ]
             }
@@ -280,6 +282,7 @@ class ContentPieceResponse(BaseModel):
     type: str
     caption: str
     visual_script: str
+    style: str | None  # "cinematic" o "avatar" - estilo de video
     media_url: str | None
     status: str
     created_at: datetime
@@ -307,6 +310,7 @@ class SavePlanResponse(BaseModel):
                         "type": "Reel",
                         "caption": "Texto del caption",
                         "visual_script": "Descripción visual",
+                        "style": "cinematic",
                         "media_url": None,
                         "status": "PENDING",
                         "created_at": "2025-11-30T10:00:00Z",
@@ -369,6 +373,7 @@ async def save_content_plan(
                 type=piece_data.type,
                 caption=piece_data.caption,
                 visual_script=piece_data.visual_script,
+                style=piece_data.style if piece_data.style else "cinematic",  # Guardar el estilo
                 status="PENDING",
                 created_at=datetime.now(timezone.utc)
             )
@@ -403,6 +408,7 @@ async def save_content_plan(
             type=piece.type,
             caption=piece.caption,
             visual_script=piece.visual_script,
+            style=piece.style,  # Incluir el estilo en la respuesta
             media_url=piece.media_url,
             status=piece.status,
             created_at=piece.created_at,
@@ -664,7 +670,8 @@ async def save_content_plan_public(
                 "platform": "Instagram",
                 "type": "Reel",
                 "caption": "...",
-                "visual_script": "..."
+                "visual_script": "...",
+                "style": "cinematic"
             }
         ]
     }
@@ -687,6 +694,7 @@ async def save_content_plan_public(
                     "type": "Reel",
                     "caption": "...",
                     "visual_script": "...",
+                    "style": "cinematic",
                     "media_url": null,
                     "status": "PENDING",
                     "created_at": "2025-11-30T10:00:00Z",
@@ -720,6 +728,7 @@ async def save_content_plan_public(
                 type=piece_data.type,
                 caption=piece_data.caption,
                 visual_script=piece_data.visual_script,
+                style=piece_data.style if piece_data.style else "cinematic",  # Guardar el estilo
                 status="PENDING",
                 created_at=datetime.now(timezone.utc)
             )
@@ -754,6 +763,7 @@ async def save_content_plan_public(
             type=piece.type,
             caption=piece.caption,
             visual_script=piece.visual_script,
+            style=piece.style,  # Incluir el estilo en la respuesta
             media_url=piece.media_url,
             status=piece.status,
             created_at=piece.created_at,
@@ -1072,6 +1082,7 @@ async def get_marketing_campaign(
             type=piece.type,
             caption=piece.caption,
             visual_script=piece.visual_script,
+            style=piece.style,  # Incluir el estilo en la respuesta
             media_url=piece.media_url,  # Devolver tal cual está en DB (puede ser None o string)
             status=piece.status,  # Devolver tal cual está en DB (puede ser "COMPLETED", "completed", etc.)
             created_at=piece.created_at,

@@ -41,6 +41,7 @@ class ContentPiece(SQLModel, table=True):
     type: str = Field(max_length=50)  # Reel, Post, Story, Video, etc.
     caption: str = Field()  # Texto largo para el caption
     visual_script: str = Field()  # Texto largo para el script visual
+    style: Optional[str] = Field(default="cinematic", max_length=50)  # "cinematic" o "avatar" - estilo de video
     media_url: Optional[str] = Field(default=None, max_length=1000)  # URL de imagen/video generado
     status: str = Field(default="PENDING", max_length=50)  # PENDING, GENERATING, COMPLETED, FAILED
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
