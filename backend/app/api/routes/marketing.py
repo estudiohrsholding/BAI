@@ -945,27 +945,34 @@ async def get_marketing_campaign(
     pieces_statement = select(ContentPiece).where(ContentPiece.campaign_id == campaign_id)
     pieces = session.exec(pieces_statement).all()
     
+    # LOG DEBUG: Ver qué piezas estamos obteniendo de la DB
+    print(f"📦 Fetching campaign {campaign_id} - Found {len(pieces)} pieces:")
+    for piece in pieces:
+        print(f"   - Piece {piece.id}: status='{piece.status}', media_url={piece.media_url[:60] if piece.media_url else 'NULL'}...")
+    
     # Parsear platforms
     platforms_list = campaign.platforms.split(",") if isinstance(campaign.platforms, str) else campaign.platforms
     
-    # Construir respuesta con piezas anidadas
-    content_pieces = [
-        ContentPieceResponse(
+    # Construir respuesta con piezas anidadas - Asegurar que media_url se devuelve tal cual está en DB
+    content_pieces = []
+    for piece in pieces:
+        piece_response = ContentPieceResponse(
             id=piece.id,
             campaign_id=piece.campaign_id,
             platform=piece.platform,
             type=piece.type,
             caption=piece.caption,
             visual_script=piece.visual_script,
-            media_url=piece.media_url,
-            status=piece.status,
+            media_url=piece.media_url,  # Devolver tal cual está en DB (puede ser None o string)
+            status=piece.status,  # Devolver tal cual está en DB (puede ser "COMPLETED", "completed", etc.)
             created_at=piece.created_at,
             updated_at=piece.updated_at
         )
-        for piece in pieces
-    ]
+        content_pieces.append(piece_response)
+        # LOG DEBUG: Ver qué estamos devolviendo
+        print(f"   ✅ Serialized piece {piece.id}: status='{piece_response.status}', media_url_length={len(piece_response.media_url) if piece_response.media_url else 0}, media_url_preview={piece_response.media_url[:80] if piece_response.media_url else 'NULL'}...")
     
-    return MarketingCampaignDetailResponse(
+    response = MarketingCampaignDetailResponse(
         id=campaign.id,
         user_id=campaign.user_id,
         name=campaign.name,
@@ -979,4 +986,16 @@ async def get_marketing_campaign(
         updated_at=campaign.updated_at,
         content_pieces=content_pieces
     )
+    
+    # LOG DEBUG FINAL: Ver la respuesta completa que se está enviando
+    print(f"📤 Sending response for campaign {campaign_id}:")
+    print(f"   - Total pieces: {len(content_pieces)}")
+    print(f"   - Pieces with media_url: {len([p for p in content_pieces if p.media_url])}")
+    for p in content_pieces:
+        if p.media_url:
+            print(f"   - ✅ Piece {p.id}: HAS media_url (length={len(p.media_url)})")
+        else:
+            print(f"   - ❌ Piece {p.id}: NO media_url (status='{p.status}')")
+    
+    return response
 

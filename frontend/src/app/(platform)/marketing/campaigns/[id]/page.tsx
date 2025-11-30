@@ -173,35 +173,40 @@ export default function MarketingCampaignDetailPage() {
     document.body.removeChild(link);
   };
 
-  // REGLA DE ORO: Filtrar piezas basándose PRIMERO en media_url, luego en status
-  // Si tiene media_url -> es completada (sin importar el status)
-  const completedPieces = campaign.content_pieces.filter((p) => {
-    const hasMedia = p.media_url && p.media_url.trim() !== "";
-    const statusUpper = (p.status || "").toUpperCase();
-    return hasMedia || statusUpper === "COMPLETED";
-  });
+  // REGLA DE ORO RADICAL: Si tiene media_url válido (length > 5) -> ES COMPLETADA
+  // Ignorar completamente el campo status para decidir si mostrar el media
+  const hasValidMedia = (piece: ContentPieceResponse): boolean => {
+    return !!(piece.media_url && piece.media_url.trim().length > 5);
+  };
+
+  // Filtrar piezas basándose SOLO en media_url (ignorar status)
+  const completedPieces = campaign.content_pieces.filter((p) => hasValidMedia(p));
   
   const pendingPieces = campaign.content_pieces.filter((p) => {
-    const hasMedia = p.media_url && p.media_url.trim() !== "";
-    if (hasMedia) return false; // Ya está en completedPieces
-    const statusUpper = (p.status || "").toUpperCase();
+    if (hasValidMedia(p)) return false; // Ya está en completedPieces
+    const statusUpper = (p.status || "").toUpperCase().trim();
     return statusUpper === "PENDING" || statusUpper === "GENERATING" || statusUpper === "";
   });
   
   const failedPieces = campaign.content_pieces.filter((p) => {
-    const hasMedia = p.media_url && p.media_url.trim() !== "";
-    if (hasMedia) return false; // Si tiene media, no es fallida
-    const statusUpper = (p.status || "").toUpperCase();
+    if (hasValidMedia(p)) return false; // Si tiene media válido, no es fallida
+    const statusUpper = (p.status || "").toUpperCase().trim();
     return statusUpper === "FAILED";
   });
   
   // LOG DEBUG: Ver cómo se filtraron las piezas
-  console.log("🎯 Pieces Filtered:", {
+  console.log("🎯 Pieces Filtered (RADICAL SIMPLICITY):", {
     total: campaign.content_pieces.length,
     completed: completedPieces.length,
     pending: pendingPieces.length,
     failed: failedPieces.length,
-    completedDetails: completedPieces.map(p => ({ id: p.id, status: p.status, hasMedia: !!p.media_url }))
+    allPieces: campaign.content_pieces.map(p => ({ 
+      id: p.id, 
+      status: p.status, 
+      hasMedia: hasValidMedia(p),
+      mediaUrlLength: p.media_url?.length || 0,
+      mediaUrlPreview: p.media_url?.substring(0, 50) || "null"
+    }))
   });
 
   return (
@@ -281,10 +286,12 @@ export default function MarketingCampaignDetailPage() {
         </div>
       </div>
 
-      {/* Galería de Piezas Completadas */}
+      {/* Galería de TODAS las Piezas con Media (sin importar status) */}
       {completedPieces.length > 0 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-bold text-white">Contenido Generado</h2>
+          <h2 className="text-xl font-bold text-white">
+            Contenido Generado ({completedPieces.length} {completedPieces.length === 1 ? "pieza" : "piezas"})
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {completedPieces.map((piece) => {
               const isVideo = piece.type.toLowerCase().includes("reel") ||
@@ -296,21 +303,37 @@ export default function MarketingCampaignDetailPage() {
                   key={piece.id}
                   className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden hover:border-slate-700 transition-colors"
                 >
-                  {/* Media Container - REGLA DE ORO: Si hay media_url, MOSTRAR SIEMPRE */}
+                  {/* DEBUG VISUAL: Mostrar datos brutos de la pieza */}
+                  <div className="mb-2 p-2 bg-red-900/20 border border-red-500/30 rounded text-xs">
+                    <details>
+                      <summary className="text-red-400 cursor-pointer font-bold">
+                        🔍 DEBUG: Datos brutos de la pieza #{piece.id}
+                      </summary>
+                      <pre className="mt-2 text-[10px] text-red-300 overflow-auto max-h-40">
+                        {JSON.stringify(piece, null, 2)}
+                      </pre>
+                    </details>
+                  </div>
+
+                  {/* Media Container - REGLA DE ORO RADICAL: Si media_url.length > 5 -> MOSTRAR SIEMPRE */}
                   <div className="relative aspect-[9/16] bg-slate-900 overflow-hidden">
                     {(() => {
-                      const hasValidMedia = piece.media_url && piece.media_url.trim() !== "";
+                      // CONDICIÓN NUEVA: Validar que media_url existe y tiene al menos 5 caracteres
+                      const hasMedia = piece.media_url && piece.media_url.trim().length > 5;
                       
                       // LOG DEBUG por pieza
-                      if (hasValidMedia) {
-                        console.log(`✅ Rendering media for piece ${piece.id}:`, {
-                          type: isVideo ? "video" : "image",
-                          url: piece.media_url?.substring(0, 60) + "...",
-                          status: piece.status
-                        });
-                      }
+                      console.log(`🎬 Piece ${piece.id} render check:`, {
+                        hasMedia,
+                        mediaUrl: piece.media_url ? `${piece.media_url.substring(0, 60)}...` : "NULL",
+                        mediaUrlLength: piece.media_url?.length || 0,
+                        status: piece.status,
+                        isVideo,
+                        willRenderVideo: isVideo && hasMedia,
+                        willRenderImage: !isVideo && hasMedia
+                      });
                       
-                      if (isVideo && hasValidMedia) {
+                      if (isVideo && hasMedia) {
+                        console.log(`✅ RENDERING VIDEO for piece ${piece.id}: ${piece.media_url?.substring(0, 60)}...`);
                         return (
                           <video
                             controls
@@ -319,13 +342,15 @@ export default function MarketingCampaignDetailPage() {
                             preload="metadata"
                             onError={(e) => {
                               console.error(`❌ Error loading video for piece ${piece.id}:`, e);
+                              console.error(`   Video URL was: ${piece.media_url}`);
                             }}
                             onLoadedData={() => {
                               console.log(`✅ Video loaded successfully for piece ${piece.id}`);
                             }}
                           />
                         );
-                      } else if (hasValidMedia) {
+                      } else if (hasMedia) {
+                        console.log(`✅ RENDERING IMAGE for piece ${piece.id}: ${piece.media_url?.substring(0, 60)}...`);
                         return (
                           <img
                             src={piece.media_url!}
@@ -334,6 +359,7 @@ export default function MarketingCampaignDetailPage() {
                             loading="lazy"
                             onError={(e) => {
                               console.error(`❌ Error loading image for piece ${piece.id}:`, e);
+                              console.error(`   Image URL was: ${piece.media_url}`);
                             }}
                             onLoad={() => {
                               console.log(`✅ Image loaded successfully for piece ${piece.id}`);
@@ -341,12 +367,20 @@ export default function MarketingCampaignDetailPage() {
                           />
                         );
                       } else {
+                        console.warn(`⚠️  Piece ${piece.id} has NO valid media:`, {
+                          mediaUrl: piece.media_url || "NULL",
+                          mediaUrlLength: piece.media_url?.length || 0,
+                          status: piece.status
+                        });
                         return (
                           <div className="w-full h-full flex items-center justify-center bg-slate-800">
                             <div className="text-center">
                               <Loader2 className="h-8 w-8 animate-spin text-slate-400 mx-auto mb-2" />
                               <p className="text-xs text-slate-500">La IA está cocinando...</p>
                               <p className="text-xs text-slate-600 mt-1">Status: {piece.status || "PENDING"}</p>
+                              <p className="text-xs text-red-400 mt-1">
+                                media_url: {piece.media_url ? `${piece.media_url.substring(0, 30)}...` : "NULL"}
+                              </p>
                             </div>
                           </div>
                         );
@@ -403,7 +437,7 @@ export default function MarketingCampaignDetailPage() {
         </div>
       )}
 
-      {/* Piezas Pendientes */}
+      {/* Piezas Pendientes - REGLA: Si tiene media_url, mostrarlo (aunque esté en pending) */}
       {pendingPieces.length > 0 && (
         <div className="space-y-4">
           <h2 className="text-xl font-bold text-white">En Proceso de Generación</h2>
@@ -412,21 +446,44 @@ export default function MarketingCampaignDetailPage() {
               const isVideo = piece.type.toLowerCase().includes("reel") ||
                              piece.type.toLowerCase().includes("video") ||
                              piece.type.toLowerCase().includes("tik tok");
+              
+              // Si tiene media aunque esté pendiente, mostrarlo
+              const hasMedia = piece.media_url && piece.media_url.trim().length > 5;
 
               return (
                 <div
                   key={piece.id}
                   className="rounded-xl border border-slate-800 bg-slate-900/50 overflow-hidden"
                 >
-                  {/* Skeleton Loader */}
-                  <div className="relative aspect-[9/16] bg-slate-800 flex items-center justify-center">
-                    <div className="text-center">
-                      <Loader2 className="h-8 w-8 animate-spin text-amber-400 mx-auto mb-2" />
-                      <p className="text-xs text-slate-400">La IA está cocinando...</p>
-                      {piece.status === "GENERATING" && (
-                        <p className="text-xs text-amber-400 mt-1">Generando {isVideo ? "vídeo" : "imagen"}...</p>
-                      )}
-                    </div>
+                  {/* Media Container o Skeleton */}
+                  <div className="relative aspect-[9/16] bg-slate-800 overflow-hidden">
+                    {hasMedia ? (
+                      isVideo ? (
+                        <video
+                          controls
+                          className="w-full h-full object-cover"
+                          src={piece.media_url!}
+                          preload="metadata"
+                        />
+                      ) : (
+                        <img
+                          src={piece.media_url!}
+                          alt={`${piece.platform} ${piece.type}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                      )
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <div className="text-center">
+                          <Loader2 className="h-8 w-8 animate-spin text-amber-400 mx-auto mb-2" />
+                          <p className="text-xs text-slate-400">La IA está cocinando...</p>
+                          {piece.status === "GENERATING" && (
+                            <p className="text-xs text-amber-400 mt-1">Generando {isVideo ? "vídeo" : "imagen"}...</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Metadata */}
@@ -484,7 +541,7 @@ export default function MarketingCampaignDetailPage() {
         </div>
       )}
 
-      {/* Estado Vacío */}
+      {/* Estado Vacío o Sin Piezas con Media */}
       {campaign.content_pieces.length === 0 && (
         <div className="text-center py-12 rounded-xl border border-slate-800 bg-slate-900/50">
           <ImageIcon className="h-12 w-12 text-slate-400/50 mx-auto mb-4" />
@@ -493,6 +550,20 @@ export default function MarketingCampaignDetailPage() {
           </p>
           <p className="text-xs text-slate-500 mt-2">
             El contenido se generará automáticamente en segundo plano.
+          </p>
+        </div>
+      )}
+
+      {/* Mensaje si hay piezas pero ninguna con media */}
+      {campaign.content_pieces.length > 0 && completedPieces.length === 0 && pendingPieces.length > 0 && (
+        <div className="text-center py-8 rounded-xl border border-amber-500/30 bg-amber-500/10">
+          <Clock className="h-8 w-8 text-amber-400 mx-auto mb-3" />
+          <p className="text-sm font-medium text-amber-400 mb-2">
+            Generando contenido...
+          </p>
+          <p className="text-xs text-slate-400">
+            {pendingPieces.length} {pendingPieces.length === 1 ? "pieza" : "piezas"} en proceso. 
+            El contenido aparecerá automáticamente cuando esté listo.
           </p>
         </div>
       )}
