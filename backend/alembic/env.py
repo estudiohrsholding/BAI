@@ -9,8 +9,12 @@ from sqlmodel import SQLModel
 
 from app.core.config import settings
 from app.infrastructure.db.base import BaseModel  # noqa: F401
+# Importar TODOS los modelos de app.models para que Alembic los detecte
 from app.models import user as user_models  # noqa: F401
 from app.models import chat as legacy_chat_models  # noqa: F401
+from app.models import content as content_models_legacy  # noqa: F401 - MarketingCampaign, ContentPiece
+from app.models import log as log_models  # noqa: F401 - SearchLog
+# Importar modelos de módulos modulares
 from app.modules.chat import models as chat_models  # noqa: F401
 from app.modules.analytics import models as analytics_models  # noqa: F401
 from app.modules.content_creator import models as content_models  # noqa: F401
