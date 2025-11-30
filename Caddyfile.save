@@ -1,0 +1,41 @@
+# Caddyfile for B.A.I. Production Environment
+
+# 1. Frontend: Public Web & Dashboard Access
+baibussines.com {
+    reverse_proxy frontend:3000
+    log {
+        output file /var/log/caddy/frontend.log
+    }
+}
+
+# 2. Backend: API Access (FastAPI)
+api.baibussines.com {
+    # CRITICAL: This is where the frontend fetches data and Stripe sends webhooks
+    reverse_proxy backend:8000
+    log {
+        output file /var/log/caddy/backend.log
+    }
+}
+
+# 3. Automation Engine (n8n UI)
+n8n.baibussines.com {
+    # Optional: Gives your team a secure way to access the n8n editor UI
+    reverse_proxy n8n:5678
+}
+
+admeliora.baibussines.com {
+    # CRÍTICO: Apunta a la carpeta 'out' que será creada por el script de exportación
+    root * /root/deployments/admeliora-web/.next/standalone
+
+    # Maneja el enrutamiento estándar para archivos estáticos
+    handle {
+        try_files {path} {path}/index.html /index.html
+    }
+
+    file_server
+    encode gzip
+}
+    
+
+    
+
