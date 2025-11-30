@@ -15,10 +15,6 @@ import {
 import { cn } from "@/lib/utils";
 import { getCampaign, MarketingCampaignDetailResponse, ContentPieceResponse, ApiError } from "@/lib/api-client";
 
-// Deshabilitar caché para esta página - siempre obtener datos frescos
-export const dynamic = 'force-dynamic';
-export const revalidate = 0;
-
 /**
  * Página de Detalle de Campaña de Marketing
  * 
@@ -26,6 +22,9 @@ export const revalidate = 0;
  * junto con sus captions y scripts visuales.
  * 
  * REGLA DE ORO: Si piece.media_url existe -> MUESTRA EL CONTENIDO (ignora status)
+ * 
+ * NOTA: Esta es un Client Component que maneja su propio fetching y auto-refresh,
+ * por lo que no necesita exportaciones de configuración de caché (dynamic/revalidate).
  */
 export default function MarketingCampaignDetailPage() {
   const params = useParams();
@@ -80,13 +79,20 @@ export default function MarketingCampaignDetailPage() {
   };
 
   useEffect(() => {
+    if (!campaignId || isNaN(campaignId)) {
+      return;
+    }
+
     fetchCampaign();
     
     // Auto-refresh cada 10 segundos para ver contenido nuevo
-    const interval = setInterval(fetchCampaign, 10000);
+    const interval = setInterval(() => {
+      fetchCampaign();
+    }, 10000);
     
     return () => clearInterval(interval);
-  }, [campaignId, router]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignId]); // Solo dependemos de campaignId, fetchCampaign se recrea en cada render
 
   if (isLoading) {
     return (
