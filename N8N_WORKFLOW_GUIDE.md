@@ -10,7 +10,7 @@
 
 - ✅ `POST /api/v1/marketing/create-campaign` - Crea campaña (llamado desde frontend)
 - ✅ `POST /api/v1/marketing/campaign/{campaign_id}/save-plan` - Guarda plan de contenido
-- ✅ `PATCH /api/v1/marketing/content/{piece_id}/update-media` - Actualiza media URL
+- ✅ `POST /api/v1/marketing/public/content/{piece_id}/update-media` - Actualiza media URL (webhooks externos)
 
 ### 2. Variables de Entorno en n8n
 
@@ -418,7 +418,7 @@ Solo necesario si usas webhook intermedio.
 **✅ RESUELTO:** Se han creado endpoints públicos con autenticación por API key:
 
 - `POST /api/v1/marketing/public/campaign/{campaign_id}/save-plan`
-- `PATCH /api/v1/marketing/public/content/{piece_id}/update-media`
+- `POST /api/v1/marketing/public/content/{piece_id}/update-media`
 
 **Configuración requerida:**
 

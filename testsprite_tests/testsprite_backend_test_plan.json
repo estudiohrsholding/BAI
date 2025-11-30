@@ -1,0 +1,52 @@
+[
+  {
+    "id": "TC001",
+    "title": "test content planner monthly content generation",
+    "description": "Verify that the Content Planner module generates exactly 4 posts and 1 reel monthly per client with correct scheduling and media generation using n8n workflows."
+  },
+  {
+    "id": "TC002",
+    "title": "test data mining competitor analysis reports",
+    "description": "Ensure the Data Mining dashboard provides timely and detailed competitor and market analysis reports based on client inputs using Brave Search API and Gemini AI."
+  },
+  {
+    "id": "TC003",
+    "title": "test content creator multi platform campaign generation",
+    "description": "Validate that the Content Creator module supports multi-platform influencer content campaigns with AI-generated multimedia content."
+  },
+  {
+    "id": "TC004",
+    "title": "test chat module ai personality switching and context recall",
+    "description": "Check that the AI chatbot correctly switches personalities based on client_id and recalls conversation context across sessions with persistent memory."
+  },
+  {
+    "id": "TC005",
+    "title": "test billing subscription processing and feature gating",
+    "description": "Verify that the billing system processes all subscription, setup, and booster payments accurately via Stripe and enforces feature gating according to subscription tier and booster credits."
+  },
+  {
+    "id": "TC006",
+    "title": "test analytics feature usage tracking",
+    "description": "Confirm that the Analytics module correctly tracks usage of features and dashboard metrics for reporting purposes."
+  },
+  {
+    "id": "TC007",
+    "title": "test async workers background job execution and status update",
+    "description": "Ensure that async workers execute background jobs successfully and that job status updates are reflected in real time on the UI."
+  },
+  {
+    "id": "TC008",
+    "title": "test health check endpoint infrastructure validation",
+    "description": "Validate that the health check endpoint correctly verifies connectivity and status of the database, Redis, worker queues, and AI engine without failures."
+  },
+  {
+    "id": "TC009",
+    "title": "test frontend polling job status synchronization",
+    "description": "Verify that the frontend polling system using custom React hooks accurately monitors and synchronizes the status of background jobs in real time."
+  },
+  {
+    "id": "TC010",
+    "title": "test database session management and pooling",
+    "description": "Check that the database session management system correctly handles session pooling and configuration to support scalable and efficient database operations."
+  }
+]

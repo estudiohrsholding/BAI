@@ -2,123 +2,654 @@
   "tech_stack": [
     "Python 3.11",
     "FastAPI",
+    "PostgreSQL 15",
+    "SQLModel",
+    "Redis",
+    "Arq (Async Task Queue)",
     "Next.js 14",
     "TypeScript",
-    "PostgreSQL",
-    "Redis",
-    "Arq",
-    "SQLModel",
-    "Pydantic",
     "Tailwind CSS",
     "n8n",
-    "Google Gemini API",
-    "Stripe",
-    "Docker"
+    "Docker",
+    "Caddy"
   ],
   "features": [
     {
-      "name": "Content Planner",
-      "description": "Módulo para planificar y generar contenido mensual (4 Posts + 1 Reel) usando n8n para generación de IA",
+      "name": "Authentication API",
+      "description": "User registration, login, and authentication endpoints with JWT tokens and OAuth2 compatibility. Supports role-based access control (RBAC) with admin and client roles.",
       "files": [
-        "backend/app/modules/content_planner/models.py",
-        "backend/app/modules/content_planner/routes.py",
-        "backend/app/modules/content_planner/service.py",
-        "backend/app/modules/content_planner/schemas.py",
-        "backend/app/workers/tasks/content_tasks.py",
-        "frontend/src/components/content_planner/CampaignStatusTracker.tsx",
-        "frontend/src/components/content_planner/CampaignResultViewer.tsx"
-      ]
+        "backend/app/api/routes/auth.py"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/auth/register": {
+            "post": {
+              "summary": "Register a new user",
+              "description": "Register a new user with RBAC support. All public registrations default to 'client' role. Only users with valid admin_key can create 'admin' accounts.",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "email": {"type": "string", "format": "email"},
+                        "password": {"type": "string"},
+                        "full_name": {"type": "string"},
+                        "admin_key": {"type": "string"}
+                      },
+                      "required": ["email", "password"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "201": {
+                  "description": "User created successfully",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/UserResponse"
+                      }
+                    }
+                  }
+                },
+                "400": {"description": "Email already registered"},
+                "403": {"description": "Invalid admin key"}
+              }
+            }
+          },
+          "/api/auth/token": {
+            "post": {
+              "summary": "OAuth2 compatible token endpoint",
+              "description": "Accepts form data with username (email) and password. Returns JWT access token.",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/x-www-form-urlencoded": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "username": {"type": "string"},
+                        "password": {"type": "string"}
+                      },
+                      "required": ["username", "password"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {
+                  "description": "Token generated successfully",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/Token"
+                      }
+                    }
+                  }
+                },
+                "401": {"description": "Incorrect email or password"}
+              }
+            }
+          },
+          "/api/auth/me": {
+            "get": {
+              "summary": "Get current authenticated user profile",
+              "security": [{"bearerAuth": []}],
+              "responses": {
+                "200": {
+                  "description": "User profile",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/UserResponse"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     {
-      "name": "Data Mining",
-      "description": "Extracción de datos de mercado usando Brave Search API y análisis con Gemini",
+      "name": "Marketing Campaigns API",
+      "description": "Create, list, and manage marketing campaigns with content pieces. Handles credit deduction, campaign creation, content plan saving, and media URL updates. Integrates with n8n for asynchronous content generation.",
       "files": [
-        "backend/app/modules/data_mining/models.py",
-        "backend/app/modules/data_mining/routes.py",
-        "backend/app/modules/data_mining/service.py",
-        "backend/app/modules/data_mining/schemas.py",
-        "backend/app/workers/tasks/extraction_tasks.py",
-        "frontend/src/components/data_mining/ExtractionStatusList.tsx",
-        "frontend/src/components/data_mining/QueryStatusItem.tsx",
-        "frontend/src/components/data_mining/ExtractionResultViewer.tsx"
-      ]
+        "backend/app/api/routes/marketing.py"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/v1/marketing/create-campaign": {
+            "post": {
+              "summary": "Create a new marketing campaign",
+              "description": "Creates a new marketing campaign, deducts credits from user account, and sends order to n8n webhook. Requires 'access_marketing' feature.",
+              "security": [{"bearerAuth": []}],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "name": {"type": "string"},
+                        "influencer_name": {"type": "string"},
+                        "tone_of_voice": {"type": "string"},
+                        "platforms": {"type": "array", "items": {"type": "string"}},
+                        "content_count": {"type": "integer"},
+                        "topic": {"type": "string"},
+                        "scheduled_at": {"type": "string", "format": "date-time", "nullable": true}
+                      },
+                      "required": ["name", "influencer_name", "tone_of_voice", "platforms", "content_count", "topic"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {
+                  "description": "Campaign created successfully",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/CampaignCreateResponse"
+                      }
+                    }
+                  }
+                },
+                "402": {"description": "Insufficient credits"},
+                "500": {"description": "Internal server error"}
+              }
+            }
+          },
+          "/api/v1/marketing/campaigns": {
+            "get": {
+              "summary": "List all marketing campaigns",
+              "description": "Returns all marketing campaigns for the authenticated user with completion statistics.",
+              "security": [{"bearerAuth": []}],
+              "parameters": [
+                {"name": "limit", "in": "query", "schema": {"type": "integer", "default": 50}},
+                {"name": "offset", "in": "query", "schema": {"type": "integer", "default": 0}}
+              ],
+              "responses": {
+                "200": {
+                  "description": "List of campaigns",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/MarketingCampaignListResponse"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/v1/marketing/campaign/{campaign_id}": {
+            "get": {
+              "summary": "Get campaign details with content pieces",
+              "description": "Returns detailed information for a specific campaign including all content pieces with their media URLs.",
+              "security": [{"bearerAuth": []}],
+              "parameters": [
+                {"name": "campaign_id", "in": "path", "required": true, "schema": {"type": "integer"}}
+              ],
+              "responses": {
+                "200": {
+                  "description": "Campaign details",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/MarketingCampaignDetailResponse"
+                      }
+                    }
+                  }
+                },
+                "404": {"description": "Campaign not found"}
+              }
+            }
+          },
+          "/api/v1/marketing/public/campaign/{campaign_id}/save-plan": {
+            "post": {
+              "summary": "Save content plan (Public endpoint for n8n)",
+              "description": "Public endpoint for n8n to save content plan. Requires service API key authentication.",
+              "security": [{"apiKeyAuth": []}],
+              "parameters": [
+                {"name": "campaign_id", "in": "path", "required": true, "schema": {"type": "integer"}}
+              ],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "pieces": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "platform": {"type": "string"},
+                              "type": {"type": "string"},
+                              "caption": {"type": "string"},
+                              "visual_script": {"type": "string"}
+                            }
+                          }
+                        }
+                      },
+                      "required": ["pieces"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {"description": "Plan saved successfully"},
+                "400": {"description": "Invalid request"},
+                "404": {"description": "Campaign not found"}
+              }
+            }
+          },
+          "/api/v1/marketing/public/content/{piece_id}/update-media": {
+            "patch": {
+              "summary": "Update media URL (Public endpoint for webhooks)",
+              "description": "Public endpoint for webhooks (n8n, Fal.ai, etc.) to update media URL. Universal adapter supports multiple payload formats.",
+              "security": [{"apiKeyAuth": []}],
+              "parameters": [
+                {"name": "piece_id", "in": "path", "required": true, "schema": {"type": "integer"}}
+              ],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "description": "Flexible JSON payload. Supports Fal.ai format: {video: {url: ...}} or {images: [{url: ...}]}, or generic format: {media_url: ...}"
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {"description": "Media updated successfully"},
+                "400": {"description": "Could not extract media URL"},
+                "404": {"description": "Content piece not found"}
+              }
+            }
+          }
+        }
+      }
     },
     {
-      "name": "Content Creator",
-      "description": "Generación de contenido para influencers IA con múltiples plataformas",
+      "name": "Chat API",
+      "description": "AI chat endpoints for platform users and public widget chat. Integrates with Google Gemini for AI responses.",
       "files": [
-        "backend/app/modules/content_creator/models.py",
-        "backend/app/modules/content_creator/routes.py",
-        "backend/app/modules/content_creator/service.py",
-        "frontend/src/components/content_creator/CampaignStatusList.tsx"
-      ]
+        "backend/app/main.py",
+        "backend/app/services/bai_brain.py"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/chat": {
+            "post": {
+              "summary": "Chat endpoint (Protected)",
+              "description": "Protected chat endpoint requiring authentication. Uses Gemini AI to generate responses.",
+              "security": [{"bearerAuth": []}],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "text": {"type": "string"}
+                      },
+                      "required": ["text"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {
+                  "description": "AI response",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "response": {"type": "string"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/v1/widget/chat": {
+            "post": {
+              "summary": "Widget chat endpoint (Public)",
+              "description": "Public chat endpoint for embedded widgets. Accepts conversation history for context.",
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "message": {"type": "string"},
+                        "client_id": {"type": "string"},
+                        "history": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      },
+                      "required": ["message", "client_id"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {
+                  "description": "AI response",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "response": {"type": "string"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     {
-      "name": "Chat Module",
-      "description": "Sistema de chat con IA usando Gemini, con historial y contexto",
+      "name": "Data Mining API",
+      "description": "Data extraction and mining endpoints. Generates market reports using Brave Search API and Gemini AI. Requires CEREBRO plan or higher.",
       "files": [
-        "backend/app/modules/chat/routes.py",
-        "backend/app/modules/chat/service.py",
-        "backend/app/modules/chat/repository.py",
-        "backend/app/modules/chat/engine/gemini.py",
-        "frontend/src/components/organisms/ChatWindow.tsx",
-        "frontend/src/context/ChatContext.tsx"
-      ]
+        "backend/app/api/routes/data.py",
+        "backend/app/modules/data_mining/routes.py"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/data/logs": {
+            "get": {
+              "summary": "Get search logs",
+              "description": "Returns last 20 search logs for data mining activities.",
+              "security": [{"bearerAuth": []}],
+              "responses": {
+                "200": {
+                  "description": "List of search logs",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "id": {"type": "integer"},
+                            "query": {"type": "string"},
+                            "summary": {"type": "string"},
+                            "timestamp": {"type": "string", "format": "date-time"},
+                            "status": {"type": "string"}
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/data/mining-report": {
+            "post": {
+              "summary": "Generate mining report",
+              "description": "Generates complete data mining report using Gemini and Brave Search API.",
+              "security": [{"bearerAuth": []}],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "topic": {"type": "string", "nullable": true}
+                      }
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {
+                  "description": "Mining report generated",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/MiningReport"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     {
-      "name": "Billing & Subscriptions",
-      "description": "Sistema de facturación con Stripe, planes tiered (Motor/Cerebro/Partner) y feature gating",
+      "name": "Billing API",
+      "description": "Subscription and billing management endpoints. Includes plan upgrades and Stripe checkout session creation.",
       "files": [
-        "backend/app/modules/billing/routes.py",
-        "backend/app/modules/billing/service.py",
-        "backend/app/modules/billing/models.py",
-        "backend/app/api/deps.py"
-      ]
+        "backend/app/api/routes/billing.py",
+        "backend/app/modules/billing/routes.py"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/billing/upgrade": {
+            "post": {
+              "summary": "Upgrade subscription plan",
+              "description": "Upgrades user's subscription plan. Requires authentication.",
+              "security": [{"bearerAuth": []}],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "plan": {
+                          "type": "string",
+                          "enum": ["basic", "premium", "enterprise"]
+                        }
+                      },
+                      "required": ["plan"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {
+                  "description": "Plan upgraded successfully",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "status": {"type": "string"},
+                          "new_tier": {"type": "string"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/billing/create-checkout": {
+            "post": {
+              "summary": "Create Stripe checkout session",
+              "description": "Creates a Stripe checkout session and returns redirect URL.",
+              "security": [{"bearerAuth": []}],
+              "requestBody": {
+                "required": true,
+                "content": {
+                  "application/json": {
+                    "schema": {
+                      "type": "object",
+                      "properties": {
+                        "price_id": {"type": "string"}
+                      },
+                      "required": ["price_id"]
+                    }
+                  }
+                }
+              },
+              "responses": {
+                "200": {
+                  "description": "Checkout session created",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "url": {"type": "string"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     {
-      "name": "Analytics",
-      "description": "Tracking de uso de features y métricas de dashboard",
+      "name": "Content Creator API",
+      "description": "Endpoints for creating influencer content campaigns. Requires PARTNER plan. Integrates with Arq workers for asynchronous content generation.",
       "files": [
-        "backend/app/modules/analytics/routes.py",
-        "backend/app/modules/analytics/service.py",
-        "backend/app/modules/analytics/models.py"
-      ]
+        "backend/app/modules/content_creator/routes.py"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/v1/content/new-campaign": {
+            "post": {
+              "summary": "Create new content campaign",
+              "description": "Creates a new influencer content campaign and queues it for async generation. Requires PARTNER plan.",
+              "security": [{"bearerAuth": []}],
+              "responses": {
+                "202": {
+                  "description": "Campaign created and queued",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/CampaignCreatedResponse"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "/api/v1/content/campaigns": {
+            "get": {
+              "summary": "List content campaigns",
+              "description": "Returns all content campaigns for the authenticated user.",
+              "security": [{"bearerAuth": []}],
+              "responses": {
+                "200": {
+                  "description": "List of campaigns",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/CampaignListResponse"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     {
-      "name": "Async Workers",
-      "description": "Sistema de workers asíncronos usando Arq y Redis para tareas pesadas",
+      "name": "Content Planner API",
+      "description": "Endpoints for monthly content planning campaigns. Generates 4 Posts + 1 Reel. Requires CEREBRO plan or higher. Integrates with n8n for content generation.",
       "files": [
-        "backend/app/workers/tasks/content_tasks.py",
-        "backend/app/workers/tasks/extraction_tasks.py",
-        "backend/app/workers/tasks/analytics.py",
-        "backend/app/workers/worker.py",
-        "backend/app/workers/queue.py"
-      ]
+        "backend/app/modules/content_planner/routes.py"
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/api/v1/content-planner/launch-monthly-campaign": {
+            "post": {
+              "summary": "Launch monthly content campaign",
+              "description": "Creates a monthly content campaign (4 Posts + 1 Reel) and queues it for async generation. Requires CEREBRO plan.",
+              "security": [{"bearerAuth": []}],
+              "responses": {
+                "202": {
+                  "description": "Campaign launched and queued",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "$ref": "#/components/schemas/LaunchCampaignResponse"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     },
     {
-      "name": "Health Check",
-      "description": "Endpoint de health check que verifica Database, Redis, Workers y AI Engine",
+      "name": "Health Check API",
+      "description": "Health check endpoints for monitoring service status and system health.",
       "files": [
+        "backend/app/main.py",
+        "backend/app/api/router.py",
         "backend/app/api/v1/endpoints/health.py"
-      ]
-    },
-    {
-      "name": "Frontend Polling",
-      "description": "Sistema de polling inteligente para monitoreo de estado de jobs usando hooks personalizados",
-      "files": [
-        "frontend/src/hooks/useJobStatus.ts",
-        "frontend/src/hooks/useMultipleJobStatuses.ts"
-      ]
-    },
-    {
-      "name": "Database Session Management",
-      "description": "Sistema unificado de gestión de sesiones de base de datos con pool configuration",
-      "files": [
-        "backend/app/infrastructure/db/session.py",
-        "backend/app/core/database.py",
-        "backend/app/core/dependencies.py"
-      ]
+      ],
+      "api_doc": {
+        "openapi": "3.0.0",
+        "paths": {
+          "/health": {
+            "get": {
+              "summary": "Health check",
+              "description": "Returns service health status.",
+              "responses": {
+                "200": {
+                  "description": "Service is healthy",
+                  "content": {
+                    "application/json": {
+                      "schema": {
+                        "type": "object",
+                        "properties": {
+                          "status": {"type": "string"},
+                          "service": {"type": "string"}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }
-
